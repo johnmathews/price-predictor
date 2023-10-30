@@ -50,17 +50,20 @@ Limits:
 
 #### Coinmarketcap
 
-realtime data only on free tier
+Real-time data only on free tier
 
-    - pricing
-    - rankings
-    - market cap
-    - referential info
-    - exchange asset data
+Data:
 
-limits:
-   - 10000/month
-   - 30 reqs/minute
+- pricing
+- rankings
+- market cap
+- referential info
+- exchange asset data
+
+Limits:
+
+- 10000/month
+- 30 reqs/minute
 
 ## Tooling
 
