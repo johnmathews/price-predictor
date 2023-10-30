@@ -1,4 +1,4 @@
-# Price Predictor
+#d Price Predictor
 
 A data engineering pipeline to demonstrate my skills using
 
@@ -15,9 +15,9 @@ the price of bitcoin.
 
 ### Ideas
 
- Exchange order book data
- Sentiment data
- Financial data from traditional sources
+- Exchange order book data
+- Sentiment data
+- Financial data from traditional sources
     - Interest rates
         - ECB
         - Fed
@@ -27,10 +27,13 @@ the price of bitcoin.
     - Inflation data
     - NASDAQ Index
     - Dow Jones
- Bitcoin derivatives, futures
+
+- Bitcoin derivatives, futures
     - CME
- Other crypto currencies such as Ethereum?
- On-chain metrics
+
+- Other crypto currencies such as Ethereum?
+
+- On-chain metrics
     - mem pool size
     - average tnsx fee
     - miner hash rate
@@ -51,6 +54,7 @@ limits:
 #### Coinmarketcap
 
 realtime data only on free tier
+
     - pricing
     - rankings
     - market cap
