@@ -33,3 +33,23 @@ the price of bitcoin.
     - average tnsx fee
     - miner hash rate
 
+## Tooling
+
+- Azure DevOps
+    - Build step
+    - Deplot step
+- Azure Databricks
+    - Data lakehouse
+        - Storage
+    - SQL Warehouse - Compute
+- DBT
+    - documentation
+    - testing
+    - Model + DAG definitions
+
+## UI
+
+A tool this good should expose its results using some endpoints. Good thing databricks takes care of
+that...
+
+UI will be separate.
