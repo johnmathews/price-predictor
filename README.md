@@ -13,9 +13,11 @@ the price of bitcoin.
 
 ## Data Sources
 
-- Exchange order book data
-- Sentiment data
-- Financial data from traditional sources
+### Ideas
+
+ Exchange order book data
+ Sentiment data
+ Financial data from traditional sources
     - Interest rates
         - ECB
         - Fed
@@ -25,13 +27,39 @@ the price of bitcoin.
     - Inflation data
     - NASDAQ Index
     - Dow Jones
-- Bitcoin derivatives, futures
+ Bitcoin derivatives, futures
     - CME
-- Other crypto currencies such as Ethereum?
-- On-chain metrics
+ Other crypto currencies such as Ethereum?
+ On-chain metrics
     - mem pool size
     - average tnsx fee
     - miner hash rate
+
+### Crypto data sources
+
+#### CoinAPI.io
+
+- historical data
+- Realtime data
+- 100 requests/day
+
+limits:
+
+- 100 reqs/day
+
+
+#### Coinmarketcap
+
+realtime data only on free tier
+    - pricing
+    - rankings
+    - market cap
+    - referential info
+    - exchange asset data
+
+limits:
+   - 10000/month
+   - 30 reqs/minute
 
 ## Tooling
 
