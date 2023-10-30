@@ -3,7 +3,7 @@
 A data engineering pipeline to demonstrate my skills using
 
 - Azure databricks
-- Azure devops
+- Azure DevOps
 - DBT
 
 ## Goal 
