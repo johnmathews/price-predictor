@@ -1,4 +1,4 @@
-#d Price Predictor
+# Price Predictor
 
 A data engineering pipeline to demonstrate my skills using
 
@@ -27,12 +27,9 @@ the price of bitcoin.
     - Inflation data
     - NASDAQ Index
     - Dow Jones
-
 - Bitcoin derivatives, futures
     - CME
-
 - Other crypto currencies such as Ethereum?
-
 - On-chain metrics
     - mem pool size
     - average tnsx fee
@@ -42,14 +39,14 @@ the price of bitcoin.
 
 #### CoinAPI.io
 
-- historical data
-- Realtime data
-- 100 requests/day
+Data:
 
-limits:
+- historical
+- Realtime
+
+Limits:
 
 - 100 reqs/day
-
 
 #### Coinmarketcap
 
