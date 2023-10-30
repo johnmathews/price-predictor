@@ -42,7 +42,7 @@ the price of bitcoin.
 Data:
 
 - historical
-- Realtime
+- Real-time
 
 Limits:
 
@@ -50,7 +50,7 @@ Limits:
 
 #### Coinmarketcap
 
-Real-time data only on free tier
+Real-time only on free tier
 
 Data:
 
