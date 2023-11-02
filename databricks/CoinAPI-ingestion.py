@@ -5,24 +5,30 @@
 
 import configparser
 
+CONFIG_PATH = '../config/config.ini'
+
 def read_ini_config_from_workspace(path):
     """
-    Read an .ini configuration file from the Databricks workspace and return a ConfigParser object.
+    Read an .ini configuration file from the Databricks workspace and return a dictionary of configurations.
     """
+    config_object = configparser.ConfigParser()
+    with open(path, "r") as file:
+        config_object.read_file(file)
     
-    # Parse the content using ConfigParser
-    config = configparser.ConfigParser()
+    # Create a nested dictionary for each section and its key-value pairs
+    config_dict = {section: dict(config_object.items(section)) for section in config_object.sections()}
     
-    # Use dbutils to read the file content
-    config_content = dbutils.fs.head(path)
-    config.read_string(config_content)
-    
-    return config
+    return config_dict
 
+def get_config_value(config, section, key):
+    """
+    Retrieve a specific configuration value given the section and key.
+    """
+    return config.get(section, {}).get(key)
 
-config_path = "/Workspace/price-predictor/config/config.ini"
-config = read_ini_config_from_workspace(config_path)
-START_DATE = config.get("General", "start_date")
+# Usage
+config = read_ini_config_from_workspace(CONFIG_PATH)
+START_DATE = get_config_value(config, "General", "start_date")
 START_DATE
 
 # COMMAND ----------
