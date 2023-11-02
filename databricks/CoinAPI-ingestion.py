@@ -3,6 +3,30 @@
 
 # COMMAND ----------
 
+import configparser
+
+def read_ini_config_from_workspace(path):
+    """
+    Read an .ini configuration file from the Databricks workspace and return a ConfigParser object.
+    """
+    
+    # Parse the content using ConfigParser
+    config = configparser.ConfigParser()
+    
+    # Use dbutils to read the file content
+    config_content = dbutils.fs.head(path)
+    config.read_string(config_content)
+    
+    return config
+
+
+config_path = "/Workspace/price-predictor/config/config.ini"
+config = read_ini_config_from_workspace(config_path)
+START_DATE = config.get("General", "start_date")
+START_DATE
+
+# COMMAND ----------
+
 from pyspark.sql import SparkSession
 import requests
 import json
