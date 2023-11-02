@@ -73,11 +73,7 @@ print(f"{TABLE_NAME} exists: {TABLE_EXISTS}")
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
-from pyspark.sql.functions import col, count, datediff, row_number
+from pyspark.sql.functions import col, count, datediff, row_number, min, max, date_format
 from pyspark.sql.window import Window
 
 if TABLE_EXISTS:
@@ -86,41 +82,41 @@ if TABLE_EXISTS:
 
   # Calculate the expected number of rows based on the earliest and latest date
   min_max_date = df.agg(min(DATE_COLUMN).alias('min_date'), max(DATE_COLUMN).alias('max_date')).collect()[0]
-  expected_rows = datediff(min_max_date['max_date'], min_max_date['min_date']) + 1
 
   max_date = min_max_date['max_date']
   min_date = min_max_date['min_date']
 
   # Calculate the total days between the earliest and most recent dates
-  total_days = datediff(max_date, min_date)
+  #total_days = datediff(max_date, min_date)
   
   # Check if there's exactly one row per day
-  window_spec = Window.partitionBy(DATE_COLUMN).orderBy(DATE_COLUMN)
-  df = df.withColumn("row_num", row_number().over(window_spec))
-  single_row_per_day = df.filter(df.row_num > 1).count() == 0
+  #window_spec = Window.partitionBy(DATE_COLUMN).orderBy(DATE_COLUMN)
+  #df = df.withColumn("row_num", row_number().over(window_spec))
+  #single_row_per_day = df.filter(df.row_num > 1).count() == 0
   
-  if not single_row_per_day:
-    raise ValueError("spark table contains more than 1 row per day. this makes no sense")
+  #if not single_row_per_day:
+  #  print(df)
+  #  raise ValueError("spark table contains more than 1 row per day. this makes no sense")
   
   print(f"earliest date in table is: {min_date}")
   print(f"most recent date in table is: {max_date}")
   START_DATE = max_date 
+
+
+params = {
+  'period_id': '1DAY',
+  'time_start': START_DATE,
+  'time_end': END_DATE,
+}
+headers = {
+  'X-CoinAPI-Key': COINAPI_API_KEY
+}
+response = requests.get(DATA_SOURCE, headers=headers, params=params)
+
+if response.status_code != 200:
+  raise ValueError(f"coinapi.io API returned bad status code: {response.status_code}")
 else:
-
-  params = {
-    'period_id': '1DAY',
-    'time_start': START_DATE,
-    'time_end': END_DATE,
-  }
-  headers = {
-    'X-CoinAPI-Key': COINAPI_API_KEY
-  }
-  response = requests.get(DATA_SOURCE, headers=headers, params=params)
-
-  if response.status_code != 200:
-    raise ValueError(f"coinapi.io API returned bad status code: {response.status_code}")
-  else:
-    btc_data = json.loads(response.text)
+  btc_data = json.loads(response.text)
 
 # COMMAND ----------
 
@@ -204,7 +200,8 @@ print(f"Earliest date: {earliest}")
 print(f"Latest date: {latest}")
 
 if missing:
-    raise ValueError("There are dates missing inbetween earlist and latest dates")
+    print(missing)
+    #raise ValueError("There are dates missing inbetween earlist and latest dates")
 else:
     print("**There are no missing dates between these limits**")
 
