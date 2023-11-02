@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %config InteractiveShell.ast_node_interactivity='all'
+
+# COMMAND ----------
+
 from pyspark.sql import SparkSession
 import requests
 import json
@@ -11,19 +15,21 @@ BASE_CURRENCY = "USD"
 TABLE_NAME = "btc_usd_daily_price"
 DATA_SOURCE = f"https://rest.coinapi.io/v1/ohlcv/{EXCHANGE}_SPOT_{ASSET}_{BASE_CURRENCY}/history"
 
+# Define time range for the last 3 years
+START_DATE = (datetime.now() - timedelta(days=3*365)).strftime("%Y-%m-%d")
+END_DATE = datetime.now().strftime("%Y-%m-%d")
+
 # Initialize Spark session
 spark = SparkSession.builder.getOrCreate()
 
 # Retrieve API key
 api_key = dbutils.secrets.get(scope="general", key="coinapi-api-key")
 
-# Define time range for the last 3 years
-end_date = datetime.now().strftime("%Y-%m-%d")
-start_date = (datetime.now() - timedelta(days=3*365)).strftime("%Y-%m-%d")
+
 params = {
   'period_id': '1DAY',
-  'time_start': start_date,
-  'time_end': end_date
+  'time_start': START_DATE,
+  'time_end': END_DATE,
 }
 
 headers = {
@@ -36,7 +42,6 @@ response.status_code
 # COMMAND ----------
 
 btc_data = json.loads(response.text)
-btc_data
 
 # COMMAND ----------
 
@@ -44,7 +49,8 @@ btc_data
 # Convert to Spark DataFrame
 btc_df = pd.DataFrame(btc_data)
 
-btc_df
+btc_df.size
+btc_df.head()
 
 # COMMAND ----------
 
