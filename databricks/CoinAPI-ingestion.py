@@ -154,6 +154,7 @@ def coinapi_request(ENDPOINT, START_DATE, END_DATE, API_KEY):
     response = requests.get(ENDPOINT, headers=headers, params=params)
 
     if response.status_code != 200:
+        print(f"response: {response.text}")
         raise ValueError(f"coinapi.io API returned bad status code: {response.status_code}")
     else:
         print(f"response status: {response.status_code}")
@@ -348,27 +349,20 @@ else:
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Looks like missing data is missing on CoinAPI.io data, not from bad code in this notebook
+
+# COMMAND ----------
+
 for d in missing_dates[0:2]:
-    print(f"d: {d}")
-    start = (d + timedelta(days=-1)).strftime("%Y-%m-%d")
-    end = (d + timedelta(days=1)).strftime("%Y-%m-%d")
+    print(f"d: {d.strftime('%Y-%m-%d')}")
+    start = (d + timedelta(days=-2)).strftime("%Y-%m-%d")
+    end = (d + timedelta(days=2)).strftime("%Y-%m-%d")
     print(f"start: {start}")
     print(f"end: {end}")
-    btc_data = coinapi_request(ENDPOINT, d.strftime("%Y-%m-%d"), (d + timedelta(days=1)).strftime("%Y-%m-%d"), COINAPI_API_KEY)
-    print(f"data: {btc_data}")
-    df = pd.DataFrame(btc_data)
-    print(df.head())
+    df = coinapi_request(ENDPOINT, start, end, COINAPI_API_KEY)
+    df.head()
     print("\n")
-
-# COMMAND ----------
-
-btc_data = coinapi_request(ENDPOINT, "2023-03-02", "2023-04-11", COINAPI_API_KEY)
-df = pd.DataFrame(btc_data)
-
-# COMMAND ----------
-
-df = pd.DataFrame(btc_data)
-df
 
 # COMMAND ----------
 
