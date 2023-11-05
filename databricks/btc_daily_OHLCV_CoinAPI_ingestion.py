@@ -36,6 +36,13 @@ def get_config_value(config, section, key):
     """
     return config.get(section, {}).get(key)
 
+
+class UnnecessaryAPICallError(Exception):
+    """Exception raised when an API call is made but is unnecessary due to business logic."""
+    def __init__(self, message="The API call was unnecessary and has been prevented"):
+        self.message = message
+        super().__init__(self.message)
+
 config = read_ini_config_from_workspace(CONFIG_PATH)
 START_DATE = get_config_value(config, "General", "start_date")
 DATABASE_NAME = get_config_value(config, "General", "database_name")
@@ -132,7 +139,7 @@ if TABLE_EXISTS:
 
 def coinapi_request(ENDPOINT, START_DATE, END_DATE, API_KEY):
     if START_DATE == datetime.now().date():
-        raise ValueError("start date is today! no data will be returned from API. ")
+        raise UnnecessaryAPICallError("start date is today! no data will be returned from API. ")
 
     params = {
     'period_id': '1DAY',
@@ -148,7 +155,7 @@ def coinapi_request(ENDPOINT, START_DATE, END_DATE, API_KEY):
 
     if response.status_code != 200:
         print(f"response: {response.text}")
-        raise ValueError(f"coinapi.io API returned bad status code: {response.status_code}")
+        raise HTTPError(f"coinapi.io API returned bad status code: {response.status_code}")
     else:
         print(f"response status: {response.status_code}")
 
@@ -163,7 +170,7 @@ df = coinapi_request(ENDPOINT, START_DATE, END_DATE, COINAPI_API_KEY)
 
 
 if START_DATE == datetime.now().date():
-    raise ValueError("start date is today! no data will be returned from API. ")
+    raise UnnecessaryAPICallError("start date is today! no data will be returned from API. ")
 
 # COMMAND ----------
 
@@ -326,7 +333,6 @@ if missing_dates:
     print(f"Missing dates:")
     for d in missing_dates:
         print(d)
-    #raise ValueError("There are dates missing inbetween earlist and latest dates")
 else:
     print("**There are no missing dates between these limits**")
 
@@ -335,8 +341,6 @@ if duplicated_dates:
     print("Duplicated dates:")
     for d in duplicated_dates:
         print(d)
-    
-    #raise ValueError("There are dates missing inbetween earlist and latest dates")
 else:
     print("**There are no duplicated dates between these limits**")
 
