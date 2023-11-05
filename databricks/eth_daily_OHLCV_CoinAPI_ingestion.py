@@ -62,7 +62,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 COINAPI_API_KEY = dbutils.secrets.get(scope="general", key="coinapi-api-key")
-DAYS_WITH_MISSING_DATA = 10 # apparently coinAPI.io doesnt have data for 10 days
+DAYS_WITH_MISSING_DATA = 0 # apparently coinAPI.io doesnt have data for some days
 
 EXCHANGE = "COINBASE"
 ASSET = "ETH"
