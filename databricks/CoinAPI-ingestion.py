@@ -1,5 +1,15 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ## Notebook magic
+
+# COMMAND ----------
+
 # MAGIC %config InteractiveShell.ast_node_interactivity='all'
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Project configuration values
 
 # COMMAND ----------
 
@@ -32,6 +42,11 @@ DATABASE_NAME = get_config_value(config, "General", "database_name")
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Notebook constants
+
+# COMMAND ----------
+
 ## imports and local config
 from pyspark.sql import SparkSession
 import requests
@@ -45,11 +60,16 @@ EXCHANGE = "COINBASE"
 ASSET = "BTC"
 BASE_CURRENCY = "USD"
 TABLE_NAME = "btc_usd_daily_price"
-DATA_SOURCE = f"https://rest.coinapi.io/v1/ohlcv/{EXCHANGE}_SPOT_{ASSET}_{BASE_CURRENCY}/history"
+ENDPOINT = f"https://rest.coinapi.io/v1/ohlcv/{EXCHANGE}_SPOT_{ASSET}_{BASE_CURRENCY}/history"
 
 DATE_COLUMN = "date_period_start" # used for checking missing dates, earliest, latest dates in data
 
 END_DATE = datetime.now().strftime("%Y-%m-%d")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Spark setup
 
 # COMMAND ----------
 
@@ -70,6 +90,11 @@ def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
 
 TABLE_EXISTS = True if table_exists(spark, TABLE_NAME, DATABASE_NAME) else False
 print(f"{TABLE_NAME} exists: {TABLE_EXISTS}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### If the table already exists, update START_DATE to reflect data already in table
 
 # COMMAND ----------
 
@@ -100,29 +125,61 @@ if TABLE_EXISTS:
   
   print(f"earliest date in table is: {min_date}")
   print(f"most recent date in table is: {max_date}")
-  START_DATE = max_date 
+  START_DATE = max_date + timedelta(days=1)
 
 
-params = {
-  'period_id': '1DAY',
-  'time_start': START_DATE,
-  'time_end': END_DATE,
-}
-headers = {
-  'X-CoinAPI-Key': COINAPI_API_KEY
-}
-response = requests.get(DATA_SOURCE, headers=headers, params=params)
 
-if response.status_code != 200:
-  raise ValueError(f"coinapi.io API returned bad status code: {response.status_code}")
-else:
-  btc_data = json.loads(response.text)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Get data using coinapi.io REST API
+
+# COMMAND ----------
+
+def coinapi_request(ENDPOINT, START_DATE, END_DATE, API_KEY):
+    if START_DATE == datetime.now().date():
+        raise ValueError("start date is today! no data will be returned from API. ")
+
+    params = {
+    'period_id': '1DAY',
+    'time_start': START_DATE,
+    'time_end': END_DATE,
+    }
+
+    headers = {
+    'X-CoinAPI-Key': COINAPI_API_KEY
+    }
+
+    response = requests.get(ENDPOINT, headers=headers, params=params)
+
+    if response.status_code != 200:
+        raise ValueError(f"coinapi.io API returned bad status code: {response.status_code}")
+    else:
+        print(f"response status: {response.status_code}")
+
+    json_data = json.loads(response.text)
+    return pd.DataFrame(json_data)
+
+# COMMAND ----------
+
+df = coinapi_request(ENDPOINT, START_DATE, END_DATE, COINAPI_API_KEY)
 
 # COMMAND ----------
 
 
+if START_DATE == datetime.now().date():
+    raise ValueError("start date is today! no data will be returned from API. ")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## convert API response (JSON) to to pandas dataframe. 
+# MAGIC ### and shape the data - split datetime to data and time, etc
+
+# COMMAND ----------
+
 # Convert to Spark DataFrame
-df = pd.DataFrame(btc_data)
 print(f"column names from API provider: {df.columns.tolist()}")
 
 df['time_period_start'] = pd.to_datetime(df['time_period_start'])
@@ -163,53 +220,8 @@ df = df[cols]
 
 # COMMAND ----------
 
-# CHECK THAT API DATA IS CONTINUOUS (no missing days).
-# raises an error if there are missing days between earliest and latest days
-
-DATAFRAME = df
-
-def analyze_dates(df, date_column):
-    """
-    Analyze a date column in a DataFrame.
-    
-    Args:
-    - df (pd.DataFrame): The input DataFrame.
-    - date_column (str): The name of the date column to analyze.
-    
-    Returns:
-    - tuple: Earliest date, most recent date, and a list of missing dates.
-    """
-    # Convert the column into a Pandas datetime object
-    df[date_column] = pd.to_datetime(df[date_column])
-    
-    # Find the earliest and most recent dates
-    earliest_date = df[date_column].min()
-    most_recent_date = df[date_column].max()
-    
-    # Create a date range from the earliest to the most recent date
-    full_date_range = pd.date_range(earliest_date, most_recent_date)
-    
-    # Find missing dates by comparing the date range with the unique dates in the date column
-    missing_dates = full_date_range.difference(df[date_column].unique())
-    
-    return earliest_date, most_recent_date, missing_dates.tolist()
-
-earliest, latest, missing = analyze_dates(DATAFRAME, DATE_COLUMN)
-
-print(f"Earliest date: {earliest}")
-print(f"Latest date: {latest}")
-
-if missing:
-    print(missing)
-    #raise ValueError("There are dates missing inbetween earlist and latest dates")
-else:
-    print("**There are no missing dates between these limits**")
-
-
-# COMMAND ----------
-
-df.head()
-df.dtypes
+# MAGIC %md
+# MAGIC ## Append new data to spard table, or create a table if it doesnt already exist
 
 # COMMAND ----------
 
@@ -241,6 +253,122 @@ if spark._jsparkSession.catalog().tableExists(TABLE_NAME):
     spark_df.write.mode("append").saveAsTable(TABLE_NAME)
 else:
     spark_df.write.saveAsTable(TABLE_NAME)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Make a function to check that there is exactly one row for each day between the earliest and most recent dates, 
+# MAGIC ### no duplicates, no misses
+
+# COMMAND ----------
+
+# CHECK THAT API DATA IS CONTINUOUS (no missing days).
+# raises an error if there are missing days between earliest and latest days
+
+def analyze_dates(df, date_column):
+    """
+    Analyze a date column in a DataFrame to find the earliest, latest, missing, and duplicated dates.
+    
+    Args:
+    - dataframe (pd.DataFrame): The input DataFrame.
+    - date_column (str): The name of the date column to analyze.
+    
+    Returns:
+    - tuple: Earliest date, most recent date, list of missing dates, and list of duplicated dates.
+    """
+
+    print(f"date_column: {date_column}")
+    # Ensure date_column is a datetime object
+    df[date_column] = pd.to_datetime(df[date_column].to_numpy(), errors="coerce")
+    
+    # Find the earliest and most recent dates
+    earliest_date = df[date_column].min()
+    most_recent_date = df[date_column].max()
+    
+    # Create a date range from the earliest to the most recent date
+    full_date_range = pd.date_range(earliest_date, most_recent_date)
+    
+    # Identify missing dates by comparing the full date range with the unique dates
+    missing_dates = full_date_range.difference(df[date_column].unique()).tolist()
+    
+    # Find duplicated dates by filtering the date column
+    duplicated_dates = df[df.duplicated(subset=date_column, keep=False)][date_column]
+    duplicated_dates = sorted(duplicated_dates.unique())
+    
+    return earliest_date, most_recent_date, missing_dates, duplicated_dates
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Housekeeping
+# MAGIC ### remove duplicates
+# MAGIC why are there duplicates? are you requesting data you already have?
+
+# COMMAND ----------
+
+df = spark.table(TABLE_NAME).toPandas()
+df_unique = df.drop_duplicates(keep='first')
+spark_df = spark.createDataFrame(df_unique)
+
+spark.sql(f"DROP TABLE IF EXISTS {TABLE_NAME}")
+spark_df.write.saveAsTable(TABLE_NAME)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Check the stored Spark table for missing dates and duplicated dates
+# MAGIC
+
+# COMMAND ----------
+
+df = spark.table(TABLE_NAME).toPandas()
+earliest, latest, missing_dates, duplicated_dates = analyze_dates(df, DATE_COLUMN)
+
+print(f"Earliest date: {earliest}")
+print(f"Latest date: {latest}")
+
+if missing_dates:
+    print(f"Missing dates:")
+    for d in missing_dates:
+        print(d)
+    #raise ValueError("There are dates missing inbetween earlist and latest dates")
+else:
+    print("**There are no missing dates between these limits**")
+
+
+if duplicated_dates:
+    print("Duplicated dates:")
+    for d in duplicated_dates:
+        print(d)
+    
+    #raise ValueError("There are dates missing inbetween earlist and latest dates")
+else:
+    print("**There are no duplicated dates between these limits**")
+
+# COMMAND ----------
+
+for d in missing_dates[0:2]:
+    print(f"d: {d}")
+    start = (d + timedelta(days=-1)).strftime("%Y-%m-%d")
+    end = (d + timedelta(days=1)).strftime("%Y-%m-%d")
+    print(f"start: {start}")
+    print(f"end: {end}")
+    btc_data = coinapi_request(ENDPOINT, d.strftime("%Y-%m-%d"), (d + timedelta(days=1)).strftime("%Y-%m-%d"), COINAPI_API_KEY)
+    print(f"data: {btc_data}")
+    df = pd.DataFrame(btc_data)
+    print(df.head())
+    print("\n")
+
+# COMMAND ----------
+
+btc_data = coinapi_request(ENDPOINT, "2023-03-02", "2023-04-11", COINAPI_API_KEY)
+df = pd.DataFrame(btc_data)
+
+# COMMAND ----------
+
+df = pd.DataFrame(btc_data)
+df
 
 # COMMAND ----------
 
