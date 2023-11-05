@@ -59,8 +59,8 @@ DAYS_WITH_MISSING_DATA = 10 # apparently coinAPI.io doesnt have data for 10 days
 
 EXCHANGE = "COINBASE"
 ASSET = "ETH"
+TABLE_NAME = "eth_usd_daily_price"
 BASE_CURRENCY = "USD"
-TABLE_NAME = "btc_usd_daily_price"
 ENDPOINT = f"https://rest.coinapi.io/v1/ohlcv/{EXCHANGE}_SPOT_{ASSET}_{BASE_CURRENCY}/history"
 
 DATE_COLUMN = "date_period_start" # used for checking missing dates, earliest, latest dates in data
