@@ -55,6 +55,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 COINAPI_API_KEY = dbutils.secrets.get(scope="general", key="coinapi-api-key")
+DAYS_WITH_MISSING_DATA = 10 # apparently coinAPI.io doesnt have data for 10 days
 
 EXCHANGE = "COINBASE"
 ASSET = "BTC"
@@ -87,7 +88,6 @@ def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
     tables = spark.sql(f"SHOW TABLES IN {database}")
     return tables.filter(tables.tableName == table_name).count() > 0
 
-
 TABLE_EXISTS = True if table_exists(spark, TABLE_NAME, DATABASE_NAME) else False
 print(f"{TABLE_NAME} exists: {TABLE_EXISTS}")
 
@@ -110,25 +110,18 @@ if TABLE_EXISTS:
 
   max_date = min_max_date['max_date']
   min_date = min_max_date['min_date']
+  date_difference = (max_date - min_date).days + 2
 
-  # Calculate the total days between the earliest and most recent dates
-  #total_days = datediff(max_date, min_date)
-  
-  # Check if there's exactly one row per day
-  #window_spec = Window.partitionBy(DATE_COLUMN).orderBy(DATE_COLUMN)
-  #df = df.withColumn("row_num", row_number().over(window_spec))
-  #single_row_per_day = df.filter(df.row_num > 1).count() == 0
-  
-  #if not single_row_per_day:
-  #  print(df)
-  #  raise ValueError("spark table contains more than 1 row per day. this makes no sense")
-  
-  print(f"earliest date in table is: {min_date}")
-  print(f"most recent date in table is: {max_date}")
   START_DATE = max_date + timedelta(days=1)
 
-
-
+  print(f"earliest date in table is: {min_date}")
+  print(f"most recent date in table is: {max_date}")
+  print(f"number of calendar days between earliest and most recent date in table (inclusive): {date_difference}")
+  print(f"\n*** CoinAPI.io is missing data for {DAYS_WITH_MISSING_DATA} days ***\n")
+  print(f"number of rows in table: {df.count()}")
+  print(f"number of unique rows in table: {df.distinct().count()}")
+  print(f"number of expected rows in table: {date_difference - DAYS_WITH_MISSING_DATA}")
+  print(f"row count error: {date_difference - DAYS_WITH_MISSING_DATA - df.distinct().count()}")
 
 # COMMAND ----------
 
