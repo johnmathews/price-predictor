@@ -49,23 +49,22 @@ DATABASE_NAME = get_config_value(config, "General", "database_name")
 
 ## imports and local config
 from pyspark.sql import SparkSession
-import requests
+import nasdaqdatalink
+
+import os
 import json
 from datetime import datetime, timedelta
 import pandas as pd
 
-COINAPI_API_KEY = dbutils.secrets.get(scope="general", key="coinapi-api-key")
-DAYS_WITH_MISSING_DATA = 10 # apparently coinAPI.io doesnt have data for 10 days
+NASDAQ_API_KEY = dbutils.secrets.get(scope="general", key="nasdaq-api-key")
+os.environ['NASDAQ_DATA_LINK_API_KEY'] = NASDAQ_API_KEY
 
-EXCHANGE = "COINBASE"
-ASSET = "BTC"
-BASE_CURRENCY = "USD"
-TABLE_NAME = "btc_usd_daily_price"
-ENDPOINT = f"https://rest.coinapi.io/v1/ohlcv/{EXCHANGE}_SPOT_{ASSET}_{BASE_CURRENCY}/history"
+DAYS_WITH_MISSING_DATA = 0 
 
-DATE_COLUMN = "date_period_start" # used for checking missing dates, earliest, latest dates in data
+# COMMAND ----------
 
-END_DATE = datetime.now().strftime("%Y-%m-%d")
+data = nasdaqdatalink.get("FRED/GDP", start_date="2001-12-31", end_date="2005-12-31")
+data
 
 # COMMAND ----------
 
