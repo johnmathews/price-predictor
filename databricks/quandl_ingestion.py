@@ -101,6 +101,12 @@ ML_EMCTRI = nasdaqdatalink.get("ML/EMCTRI", start_date=START_DATE, end_date=toda
 # US Corporate Bond Index Yield https://data.nasdaq.com/data/ML/USEY-us-corporate-bond-index-yield
 ML_USEY = nasdaqdatalink.get("ML/USEY", start_date=START_DATE, end_date=today)
 
+# Natural Rate of Unemployment (Short-Term) https://data.nasdaq.com/data/FRED/NROUST-natural-rate-of-unemployment-shortterm
+FRED_NROUST = nasdaqdatalink.get("FRED/NROUST", start_date=START_DATE, end_date=today)
+
+# Nasdaq Daily Index Data & Analytics https://data.nasdaq.com/tables/NEID/NDAQ-EIV
+NDAQ_EIV = nasdaqdatalink.get("NDAQ/EIV", start_date=START_DATE, end_date=today)
+
 # COMMAND ----------
 
 # MAGIC %md
