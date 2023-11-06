@@ -160,30 +160,23 @@ spark = SparkSession.builder.getOrCreate()
 
 # COMMAND ----------
 
-# If TABLE_NAME doesnt exist, go get data. If it does exist, figure out what data to request
+# MAGIC %md
+# MAGIC ## Utility functions
 
-def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
+# COMMAND ----------
+
+def clean_column_names(df):
     """
-    Check if a table exists in the given database.
+    Removes spaces from all column names in the DataFrame and replaces bad characters with underscores.
     """
-    table_name = table_name.lower()
-    tables = spark.sql(f"SHOW TABLES IN {database}")
-    return tables.filter(tables.tableName == table_name).count() > 0
+    # Define bad characters which you want to replace with an underscore
+    bad_chars = [' ', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', '\\', ':', ';', '"', "'", '<', '>', ',', '.', '?', '/']
 
-def create_data_table(key: str) -> None:
-    info: dict = data_sources_dict[key]
-    table_name = key.lower()
-    ticker = info["ticker_symbol"]
+    # Replace spaces and bad characters in column names
+    df.columns = df.columns.str.translate(str.maketrans({char: '_' for char in bad_chars}))
     
-    av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='full')
-    df = pd.DataFrame.from_dict(av_data, orient="index")
-    df = df.reset_index().rename(columns={'index': 'date'})
+    return df
 
-    spark_df = spark.createDataFrame(df)
-    spark_df.write.saveAsTable(table_name)
-    
-    table_comment = info['notes']
-    spark.sql(f"COMMENT ON TABLE {info['catalog_table_name']} IS '{table_comment}'")
 
 def clean_dataframe(df, date_column, cutoff_date):
     """
@@ -199,24 +192,67 @@ def clean_dataframe(df, date_column, cutoff_date):
 
     # Remove rows with dates before the given cutoff date
     filtered_df = df[df[date_column] > pd.to_datetime(cutoff_date)]
-    min_max_date = df.agg(min(date_column).alias('min_date'), max(date_column).alias('max_date')).collect()[0]
-    max_date = min_max_date['max_date']
-    min_date = min_max_date['min_date']
-    print(f"cleaned dataframe has max date {max_date} and min date {min_date}")
+    
+    if not filtered_df.empty: 
+        min_date = filtered_df[date_column].min()
+        max_date = filtered_df[date_column].max()
+        print(f"The oldest date is: {min_date}")
+        print(f"The most recent date is: {max_date}")
+    else:
+        print(f"no new rows to append")
 
     return filtered_df
 
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Get and process data
+
+# COMMAND ----------
+
+# If TABLE_NAME doesnt exist, go get data. If it does exist, figure out what data to request
+
+def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
+    """
+    Check if a table exists in the given database.
+    """
+    table_name = table_name.lower()
+    tables = spark.sql(f"SHOW TABLES IN {database}")
+    return tables.filter(tables.tableName == table_name).count() > 0
+
+def create_data_table(key: str) -> None:
+    info: dict = alpha_vantage_tickers[key]
+    table_name = key.lower()
+    ticker = info["ticker_symbol"]
+    
+    av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='full')
+    df = pd.DataFrame.from_dict(av_data, orient="index")
+    df = df.reset_index().rename(columns={'index': 'date'})
+    df['date'] = pd.to_datetime(df['date'])
+    df = clean_column_names(df)
+
+    spark_df = spark.createDataFrame(df)
+    spark_df.write.saveAsTable(table_name)
+    
+    table_comment = info['notes']
+    spark.sql(f"COMMENT ON TABLE {key.lower()} IS '{table_comment}'")
+
+
+
     
 def append_to_table(key: str) -> None:
-    info: dict = data_sources_dict[key]
+    info: dict = alpha_vantage_tickers[key]
     table_name = key.lower()
     ticker = info["ticker_symbol"]
 
     df = spark.table(table_name)
-    min_max_date = df.agg(min(DATE_COLUMN).alias('min_date'), max(DATE_COLUMN).alias('max_date')).collect()[0]
+    min_max_date = df.agg(min('date').alias('min_date'), max('date').alias('max_date')).collect()[0]
     max_date = min_max_date['max_date']
     min_date = min_max_date['min_date']
-
+    
+    #max_date = datetime.strptime(min_max_date['max_date'], "%Y-%m-%d")
+    #min_date = datetime.strptime(min_max_date['min_date'], "%Y-%m-%d")
+    
     date_difference = (max_date - min_date).days + 2
     start_date = max_date + timedelta(days=1)
 
@@ -228,15 +264,19 @@ def append_to_table(key: str) -> None:
     print(f"number of unique rows in table: {df.distinct().count()}")
     print(f"number of expected rows in table: {date_difference}")
     print(f"row count error: {date_difference - df.distinct().count()}")
-    print("\n")
 
     av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='compact')
     df = pd.DataFrame.from_dict(av_data, orient="index")
     df = df.reset_index().rename(columns={'index': 'date'})
     df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
+    
+    if not df.empty:
+        df = clean_column_names(df)
 
-    spark_df = spark.createDataFrame(df)
-    spark_df.write.mode("append").saveAsTable(info["catalog_table_name"])
+        spark_df = spark.createDataFrame(df)
+        spark_df.write.mode("append").saveAsTable(info["catalog_table_name"])
+    
+    print("\n")
 
 # COMMAND ----------
 
@@ -258,3 +298,7 @@ for key in alpha_vantage_tickers.keys():
 # MAGIC TODO:
 # MAGIC 1. check for duplicates
 # MAGIC 2. maybe interpolate days inbetween for monthly/quarterly data
+
+# COMMAND ----------
+
+
