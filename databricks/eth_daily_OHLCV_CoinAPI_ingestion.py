@@ -62,7 +62,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 COINAPI_API_KEY = dbutils.secrets.get(scope="general", key="coinapi-api-key")
-DAYS_WITH_MISSING_DATA = 0 # apparently coinAPI.io doesnt have data for some days
+DAYS_WITH_MISSING_DATA = 10 # apparently coinAPI.io doesnt have data for some days
 
 EXCHANGE = "COINBASE"
 ASSET = "ETH"
@@ -244,8 +244,8 @@ time_columns = [
 ]
 
 doubleType_columns = [
-    "pice_low",
-    "prince_high",
+    "price_low",
+    "price_high",
     "price_open",
     "price_close",
     "volume_traded",
@@ -325,11 +325,15 @@ def analyze_dates(df, date_column):
 # COMMAND ----------
 
 df = spark.table(TABLE_NAME).toPandas()
-df_unique = df.drop_duplicates(keep='first')
-spark_df = spark.createDataFrame(df_unique)
+duplicate_count = df.duplicated(keep='first').sum()
+print(f"number of duplicates in table: {duplicate_count}")
 
-spark.sql(f"DROP TABLE IF EXISTS {TABLE_NAME}")
-spark_df.write.saveAsTable(TABLE_NAME)
+if duplicate_count:
+    df_unique = df.drop_duplicates(keep='first')
+    spark_df = spark.createDataFrame(df_unique)
+
+    spark.sql(f"DROP TABLE IF EXISTS {TABLE_NAME}")
+    spark_df.write.saveAsTable(TABLE_NAME)
 
 # COMMAND ----------
 
@@ -370,10 +374,10 @@ else:
 
 # COMMAND ----------
 
-for d in missing_dates[0:2]:
+for d in missing_dates:
     print(f"d: {d.strftime('%Y-%m-%d')}")
-    start = (d + timedelta(days=-2)).strftime("%Y-%m-%d")
-    end = (d + timedelta(days=2)).strftime("%Y-%m-%d")
+    start = (d + timedelta(days=0)).strftime("%Y-%m-%d")
+    end = (d + timedelta(days=0)).strftime("%Y-%m-%d")
     print(f"start: {start}")
     print(f"end: {end}")
     df = coinapi_request(ENDPOINT, start, end, COINAPI_API_KEY)
