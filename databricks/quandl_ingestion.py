@@ -60,23 +60,46 @@ NASDAQ_API_KEY = dbutils.secrets.get(scope="general", key="nasdaq-api-key")
 os.environ['NASDAQ_DATA_LINK_API_KEY'] = NASDAQ_API_KEY
 
 DAYS_WITH_MISSING_DATA = 0 
+today = datetime.now().strftime("%Y-%m-%d")
+today
 
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC # Notes
 # MAGIC - FRED = Federal Reserve Economic Data
 # MAGIC - GDP = Gross Domestic Product
 # MAGIC
 
 # COMMAND ----------
 
-data = nasdaqdatalink.get("FRED/GDP", start_date="2001-12-31", end_date="2005-12-31")
 
 
 # COMMAND ----------
 
-data.shape
-data
+FRED_GDP = nasdaqdatalink.get("FRED/GDP", start_date=START_DATE, end_date=today)
+
+# S&P 500 Dividend Yield by MONTH https://data.nasdaq.com/data/MULTPL/SP500_DIV_YIELD_MONTH-sp-500-dividend-yield-by-month
+SP500_DIV_YIELD_MONTH = nasdaqdatalink.get("MULTPL/SP500_DIV_YIELD_MONTH", start_date=START_DATE, end_date=today)
+
+# COMMAND ----------
+
+# Corporate Bond Yield Rates https://data.nasdaq.com/data/ML-corporate-bond-yield-rates
+
+# Emerging Markets High Yield Corporate Bond Index Yield https://data.nasdaq.com/data/ML/EMHYY-emerging-markets-high-yield-corporate-bond-index-yield
+ML_EMHYY = nasdaqdatalink.get("ML/EMHYY", start_date=START_DATE, end_date=today)
+
+# US AAA rated Bond Index (yield) https://data.nasdaq.com/data/ML/AAAEY-us-aaa-rated-bond-index-yield?
+ML_AAAEY = nasdaqdatalink.get("ML/AAAEY", start_date=START_DATE, end_date=today)
+
+# US AA Rated Total Return Index https://data.nasdaq.com/data/ML/AATRI-us-aa-rated-total-return-index
+ML_AATRI = nasdaqdatalink.get("ML/AATRI", start_date=START_DATE, end_date=today)
+
+# Emerging Markets Corporate Bond Total Return Index https://data.nasdaq.com/data/ML/EMCTRI-emerging-markets-corporate-bond-total-return-index
+ML_EMCTRI = nasdaqdatalink.get("ML/EMCTRI", start_date=START_DATE, end_date=today)
+
+# US Corporate Bond Index Yield https://data.nasdaq.com/data/ML/USEY-us-corporate-bond-index-yield
+ML_USEY = nasdaqdatalink.get("ML/USEY", start_date=START_DATE, end_date=today)
 
 # COMMAND ----------
 
