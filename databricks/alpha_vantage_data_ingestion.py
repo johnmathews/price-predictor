@@ -68,17 +68,32 @@ today: datetime = datetime.now().strftime("%Y-%m-%d")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC # Notes
-# MAGIC - FRED = Federal Reserve Economic Data
-# MAGIC - GDP = Gross Domestic Product
-# MAGIC
+# MAGIC %md 
+# MAGIC ## Alpha Vantage API retrieval
 
 # COMMAND ----------
 
-
 def get_historical_ohlcv(ticker_symbol: str, output_size: str):
+    """
+    Retrieve historical open, high, low, close, and volume (OHLCV) data for a given ticker symbol.
+
+    This function queries the Alpha Vantage API for daily OHLCV data. It allows the user to specify 
+    whether to receive a compact dataset of the most recent 100 data points or a full dataset 
+    that includes up to 20 years of historical data. Adjusted close values are not included by default.
     
+    Parameters:
+    - ticker_symbol (str): The ticker symbol of the stock to retrieve data for.
+    - output_size (str): The size of the dataset to return ('compact' for 100 data points, 'full' for up to 20 years).
+    
+    Returns:
+    - dict: A dictionary where each key is a date (YYYY-MM-DD) and each value is a dictionary of OHLCV data.
+    
+    Raises:
+    - ValueError: If the API query returns an error, a ValueError is raised with the error message.
+
+    Note: This function requires an API key for Alpha Vantage stored in ALPHA_VANTAGE_API_KEY.
+    """
+
     params = {
         'function': 'TIME_SERIES_DAILY',  # Use 'TIME_SERIES_DAILY_ADJUSTED' for adjusted close values
         'symbol': ticker_symbol,
@@ -135,23 +150,6 @@ alpha_vantage_tickers = {
 
 # COMMAND ----------
 
-for key in alpha_vantage_tickers.keys():
-    info = alpha_vantage_tickers[key]
-    ticker = info["ticker_symbol"]
-    notes = info["notes"]
-    
-
-spy_data = get_historical_ohlcv("SPY")
-
-# COMMAND ----------
-
-df = pd.DataFrame.from_dict(spy_data, orient="index")
-df = df.reset_index().rename(columns={'index': 'date'})
-df.head()
-df.tail()
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ## Spark setup
 
@@ -187,6 +185,27 @@ def create_data_table(key: str) -> None:
     table_comment = info['notes']
     spark.sql(f"COMMENT ON TABLE {info['catalog_table_name']} IS '{table_comment}'")
 
+def clean_dataframe(df, date_column, cutoff_date):
+    """
+    This function takes a DataFrame, the name of the date column, and a cutoff date.
+    It converts the date column to datetime, sorts the DataFrame, and removes
+    any rows with dates before the cutoff date.
+    """
+    # Convert the date column to datetime if not already in datetime format
+    df[date_column] = pd.to_datetime(df[date_column])
+
+    # Sort the DataFrame by the date column
+    df.sort_values(by=date_column, inplace=True)
+
+    # Remove rows with dates before the given cutoff date
+    filtered_df = df[df[date_column] > pd.to_datetime(cutoff_date)]
+    min_max_date = df.agg(min(date_column).alias('min_date'), max(date_column).alias('max_date')).collect()[0]
+    max_date = min_max_date['max_date']
+    min_date = min_max_date['min_date']
+    print(f"cleaned dataframe has max date {max_date} and min date {min_date}")
+
+    return filtered_df
+
     
 def append_to_table(key: str) -> None:
     info: dict = data_sources_dict[key]
@@ -209,11 +228,12 @@ def append_to_table(key: str) -> None:
     print(f"number of unique rows in table: {df.distinct().count()}")
     print(f"number of expected rows in table: {date_difference}")
     print(f"row count error: {date_difference - df.distinct().count()}")
+    print("\n")
 
     av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='compact')
     df = pd.DataFrame.from_dict(av_data, orient="index")
     df = df.reset_index().rename(columns={'index': 'date'})
-    print("\n")
+    df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
 
     spark_df = spark.createDataFrame(df)
     spark_df.write.mode("append").saveAsTable(info["catalog_table_name"])
@@ -231,8 +251,6 @@ for key in alpha_vantage_tickers.keys():
         create_data_table(key)
     else:
         append_to_table(key)
-
-spy_data = get_historical_ohlcv("SPY")
 
 # COMMAND ----------
 
