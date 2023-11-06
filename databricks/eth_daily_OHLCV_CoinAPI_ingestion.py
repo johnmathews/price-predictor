@@ -227,7 +227,7 @@ df = df[cols]
 # COMMAND ----------
 
 # Add the validated data to the datastore
-from pyspark.sql.types import DateType, StringType
+from pyspark.sql.types import DateType, StringType, LongType, DoubleType
 
 date_columns = [
     "date_period_start",
@@ -235,21 +235,37 @@ date_columns = [
     "date_open",
     "date_close",
 ]
+
 time_columns = [
     "time_period_start",
     "time_period_end",
     "time_open",
     "time_close",
-
 ]
 
+doubleType_columns = [
+    "pice_low",
+    "prince_high",
+    "price_open",
+    "price_close",
+    "volume_traded",
+]
+
+longType_columns = [
+    "trades_count",
+]
 
 spark_df = spark.createDataFrame(df)
-# Explicitly cast date-only columns to Spark's "date" datatype
+
+for column in doubleType_columns:
+    spark_df = spark_df.withColumn(column, spark_df[column].cast(DoubleType()))
+
+for column in longType_columns:
+    spark_df = spark_df.withColumn(column, spark_df[column].cast(LongType()))
+
 for column in date_columns:
     spark_df = spark_df.withColumn(column, spark_df[column].cast(DateType()))
     
-# Check if table exists and save
 if spark._jsparkSession.catalog().tableExists(TABLE_NAME):
     spark_df.write.mode("append").saveAsTable(TABLE_NAME)
 else:

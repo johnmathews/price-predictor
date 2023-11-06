@@ -63,7 +63,19 @@ DAYS_WITH_MISSING_DATA = 0
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC - FRED = Federal Reserve Economic Data
+# MAGIC - GDP = Gross Domestic Product
+# MAGIC
+
+# COMMAND ----------
+
 data = nasdaqdatalink.get("FRED/GDP", start_date="2001-12-31", end_date="2005-12-31")
+
+
+# COMMAND ----------
+
+data.shape
 data
 
 # COMMAND ----------
