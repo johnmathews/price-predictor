@@ -222,3 +222,10 @@ for key in data_sources_dict.keys():
     else:
         append_to_table(key)
 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC TODO:
+# MAGIC 1. check for duplicates
+# MAGIC 2. maybe interpolate days inbetween for monthly/quarterly data
