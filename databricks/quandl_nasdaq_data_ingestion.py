@@ -49,7 +49,10 @@ DATABASE_NAME = get_config_value(config, "General", "database_name")
 
 ## imports and local config
 from pyspark.sql import SparkSession
+
 import nasdaqdatalink
+
+from pyspark.sql.functions import col, count, datediff, row_number, min, max, date_format
 
 import os
 import json
@@ -59,9 +62,9 @@ import pandas as pd
 NASDAQ_API_KEY = dbutils.secrets.get(scope="general", key="nasdaq-api-key")
 os.environ['NASDAQ_DATA_LINK_API_KEY'] = NASDAQ_API_KEY
 
+DATE_COLUMN = "DATE"
 DAYS_WITH_MISSING_DATA = 0 
 today = datetime.now().strftime("%Y-%m-%d")
-today
 
 # COMMAND ----------
 
@@ -160,32 +163,32 @@ def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
     """
     Check if a table exists in the given database.
     """
+    table_name = table_name.lower()
     tables = spark.sql(f"SHOW TABLES IN {database}")
     return tables.filter(tables.tableName == table_name).count() > 0
 
 def create_data_table(key: str):
     info: dict = data_sources_dict[key]
-    
-    spark.sql(f"DROP TABLE IF EXISTS {info['catalog_table_name']}")
     df = nasdaqdatalink.get(info['data_link_code'], start_date=START_DATE, end_date=today)
     df = df.reset_index()
     print(f"columns: {df.columns}")
     spark_df = spark.createDataFrame(df)
     spark_df.write.saveAsTable(info["catalog_table_name"])
+    table_comment = info['notes'] + " - URL: " + info['source_url']
+    print(f"table comment: {table_comment}\n")
+    spark.sql(f"COMMENT ON TABLE {info['catalog_table_name']} IS '{table_comment}'")
+
     
 def append_to_table(key: str):
     info: dict = data_sources_dict[key]
     table_name = info["catalog_table_name"]
-    
+
     df = spark.table(table_name)
-
-    # Calculate the expected number of rows based on the earliest and latest date
     min_max_date = df.agg(min(DATE_COLUMN).alias('min_date'), max(DATE_COLUMN).alias('max_date')).collect()[0]
-
     max_date = min_max_date['max_date']
     min_date = min_max_date['min_date']
-    date_difference = (max_date - min_date).days + 2
 
+    date_difference = (max_date - min_date).days + 2
     start_date = max_date + timedelta(days=1)
 
     print(f"earliest date in table is: {min_date}")
@@ -200,15 +203,19 @@ def append_to_table(key: str):
     df = nasdaqdatalink.get(info['data_link_code'], start_date=start_date, end_date=today)
     df = df.reset_index()
     print(f"columns: {df.columns}")
+    print("\n")
 
-    spark_df = spark.createDataFrame(df)
-    spark_df.write.mode("append").saveAsTable(info["catalog_table_name"])
+    if not df.empty:
+        spark_df = spark.createDataFrame(df)
+        spark_df.write.mode("append").saveAsTable(info["catalog_table_name"])
 
 # COMMAND ----------
 
 for key in data_sources_dict.keys():
-    
-    exists = table_exists(spark, key, DATABASE_NAME)
+    item = data_sources_dict[key]
+    table_name=item['catalog_table_name'].lower()
+    print(f"{table_name = }")
+    exists = table_exists(spark=spark, table_name=table_name, database=DATABASE_NAME)
     print(f"key: {key}, exists: {exists}")
     if not exists:
         create_data_table(key)
