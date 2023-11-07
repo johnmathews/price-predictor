@@ -49,10 +49,6 @@ DATABASE_NAME = get_config_value(config, "General", "database_name")
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 ## imports and local config
 from pyspark.sql import SparkSession
 
@@ -99,6 +95,18 @@ today: datetime = datetime.now().strftime("%Y-%m-%d")
 # COMMAND ----------
 
 data_sources_dict = {
+    "LBMA_SILVER": {
+        "data_link_code": "LBMA/SILVER",
+        "catalog_table_name": "LBMA_SILVER",
+        "source_url": "https://data.nasdaq.com/data/LBMA/documentation",
+        "notes": "The London Bullion Market Association (LBMA) data feed represents London fixing prices on precious metals, gold and silver.",
+    },
+    "LBMA_GOLD": {
+        "data_link_code": "LBMA/GOLD",
+        "catalog_table_name": "LBMA_GOLD",
+        "source_url": "https://data.nasdaq.com/data/LBMA/documentation",
+        "notes": "The London Bullion Market Association (LBMA) data feed represents London fixing prices on precious metals, gold and silver.",
+    },
     "ML_EMHYY": {
         "data_link_code": "ML/EMHYY",
         "catalog_table_name": "ML_EMHYY",
