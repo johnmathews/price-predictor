@@ -50,8 +50,6 @@ DATABASE_NAME = get_config_value(config, "General", "database_name")
 ## imports and local config
 from pyspark.sql import SparkSession
 
-import nasdaqdatalink
-
 from pyspark.sql.functions import col, count, datediff, row_number, min, max, date_format
 
 import os
@@ -301,4 +299,4 @@ for key in alpha_vantage_tickers.keys():
 
 # COMMAND ----------
 
-
+dbutils.notebook.exit("SUCCESS - all cells were run, none were skipped.")

@@ -36,6 +36,7 @@ def get_config_value(config, section, key):
     """
     return config.get(section, {}).get(key)
 
+# not needed, use dbutils.notebook.exit("...") instead
 class UnnecessaryAPICallError(Exception):
     """Exception raised when an API call is made but is unnecessary due to business logic."""
     def __init__(self, message="The API call was unnecessary and has been prevented"):
@@ -139,7 +140,7 @@ if TABLE_EXISTS:
 
 def coinapi_request(ENDPOINT, START_DATE, END_DATE, API_KEY):
     if START_DATE == datetime.now().date():
-        raise UnnecessaryAPICallError("start date is today! no data will be returned from API. ")
+        dbutils.notebook.exit("start date is today! lets stop the notebook.")
 
     params = {
     'period_id': '1DAY',
@@ -386,4 +387,4 @@ for d in missing_dates:
 
 # COMMAND ----------
 
-
+dbutils.notebook.exit("SUCCESS - all cells were run, none were skipped.")

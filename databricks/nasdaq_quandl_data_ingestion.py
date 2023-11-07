@@ -1,10 +1,12 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ## Notebook magic
+# MAGIC ## Notebook magic settings and package installation
 
 # COMMAND ----------
 
 # MAGIC %config InteractiveShell.ast_node_interactivity='all'
+# MAGIC %pip install nasdaq-data-link==1.0.4 --quiet
+# MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -47,10 +49,18 @@ DATABASE_NAME = get_config_value(config, "General", "database_name")
 
 # COMMAND ----------
 
+
+
+# COMMAND ----------
+
 ## imports and local config
 from pyspark.sql import SparkSession
 
+from pyspark.dbutils import DBUtils
+
 import nasdaqdatalink
+
+
 
 from pyspark.sql.functions import col, count, datediff, row_number, min, max, date_format
 
@@ -193,16 +203,13 @@ def append_to_table(key: str) -> None:
 
     print(f"earliest date in table is: {min_date}")
     print(f"most recent date in table is: {max_date}")
-    print(f"number of calendar days between earliest and most recent date in table (inclusive): {date_difference}")
+    print(f"number of calendar days between earliest and most recent date in table (inclusive): {date_difference} (note that data might not be daily)")
 
     print(f"number of rows in table: {df.count()}")
-    print(f"number of unique rows in table: {df.distinct().count()}")
-    print(f"number of expected rows in table: {date_difference}")
-    print(f"row count error: {date_difference - df.distinct().count()}")
+    print(f"**number of unique rows in table: {df.distinct().count()}**")
 
     df = nasdaqdatalink.get(info['data_link_code'], start_date=start_date, end_date=today)
     df = df.reset_index()
-    print(f"columns: {df.columns}")
     print("\n")
 
     if not df.empty:
@@ -229,3 +236,7 @@ for key in data_sources_dict.keys():
 # MAGIC TODO:
 # MAGIC 1. check for duplicates
 # MAGIC 2. maybe interpolate days inbetween for monthly/quarterly data
+
+# COMMAND ----------
+
+dbutils.notebook.exit("SUCCESS - all cells were run, none were skipped.")
