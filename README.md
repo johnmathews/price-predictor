@@ -14,6 +14,25 @@ the price of bitcoin.
 
 ## Data Sources
 
+1. BTC - daily OHLCV
+2. ETH - daily OHLCV
+3. CAC40 - daily - Alpha Vantage - Lyxor CAC 40 ETF (traded on Euronext Paris)
+4. DAX - daily - Alpha Vantage - Global X DAX Germany ETF
+5. DIA - daily - Alpha Vantage - SPDR Dow Jones Industrial Average ETF
+6. USA GCP - FRED -quarterly
+7. NROUST - quarterly - USA unemployment short term - STAT - US Natural Rate of Unemployment (Short-Term) 
+8. FTSE100 - daily - OHLCV - Alpha Vantage - iShares Core FTSE 100 UCITS ETF (traded on the London Stock Exchange)
+9. ML_AAAEY - daily - BONDS INDEX - NASDAQ DATA LINK - US AAA rated Bond Index (yield) 
+10. ML_AATRI - daily - BONDS - US AA Rated Total Return Index 
+11. ML_EMCTRI - daily - BONDS - EM - Emerging Markets Corporate Bond Total Return Index 
+12. ML_EMHYY - daily - BONDS - EM - High Yield - Emerging Markets High Yield Corporate Bond Index Yield
+13. ML_USEY - daily - BONDS - US Corporate - US Corporate Bond Index Yield
+14. NIKKEI225 - daily OHLCV - Alpha Vantage - iShares MSCI Japan ETF (tracks a broad range of
+    Japanese stocks)
+15. 
+
+
+
 ### Ideas
 
 - Exchange order book data
