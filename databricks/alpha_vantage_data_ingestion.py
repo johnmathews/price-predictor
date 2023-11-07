@@ -116,32 +116,133 @@ def get_historical_ohlcv(ticker_symbol: str, output_size: str):
 # COMMAND ----------
 
 alpha_vantage_tickers = {
+    "CORN": {
+        "type": "function",
+        "ticker_symbol": "CORN",
+        "interval": "monthly",
+        "notes": "Alpha Vantage -  the global price of corn in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
+    },
+    "COFFEE": {
+        "type": "function",
+        "ticker_symbol": "COFFEE",
+        "interval": "monthly",
+        "notes": "Alpha Vantage - global price of coffee in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
+    },
+    "SUGAR": {
+        "type": "function",
+        "ticker_symbol": "SUGAR",
+        "interval": "monthly",
+        "notes": "Alpha Vantage - s the global price of sugar in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted." ,
+    },
+    "ALUMINUM": {
+        "type": "function",
+        "ticker_symbol": "ALUMINUM",
+        "interval": "monthly",
+        "notes": "Alpha Vantage -  global price of aluminum in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
+    },
+    "COPPER": {
+        "type": "function",
+        "ticker_symbol": "COPPER",
+        "interval": "monthly",
+        "notes": "Alpha Vantage - global price of copper in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
+    },
+    "NATURAL_GAS": {
+        "type": "function",
+        "ticker_symbol": "NATURAL_GAS",
+        "interval": "daily",
+        "notes": "Alpha Vantage -  the Henry Hub natural gas spot prices in daily, weekly, and monthly horizons. By default, interval=monthly. Strings daily, weekly, and monthly are accepted.",
+    },
+    "WHEAT": {
+        "type": "function",
+        "ticker_symbol": "WHEAT",
+        "interval": "monthly",
+        "notes": "Alpha Vantage - global price of wheat in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
+    },
+    "WTI": {
+        "type": "function",
+        "ticker_symbol": "WTI",
+        "interval": "monthly",
+        "notes": "Alpha Vantage - West Texas Intermediate (WTI) crude oil prices in daily, weekly, and monthly horizons. By default, interval=monthly. Strings daily, weekly, and monthly are accepted.",
+    },
+    "BRENT": {
+        "type": "function",
+        "ticker_symbol": "BRENT",
+        "interval": "daily",
+        "notes": "Alpha Vantage - Brent (Europe) crude oil prices in daily, weekly, and monthly horizons. By default, interval=monthly. Strings daily, weekly, and monthly are accepted.",
+    },
+    "TREASURY_YIELD": {
+        "type": "function",
+        "ticker_symbol": "TREASURY_YIELD",
+        "notes": "Alpha Vantage - daily, weekly, and monthly US treasury yield of a given maturity timeline (e.g., 5 year, 30 year, etc). By default, maturity=10year. Strings 3month, 2year, 5year, 7year, 10year, and 30year are accepted.",
+    },
+    "USA_INTEREST_RATE": {
+        "type": "function",
+        "ticker_symbol": "FEDERAL_FUNDS_RATE",
+        "notes": "Alpha Vantage - daily, weekly, and monthly federal funds rate (interest rate) of the United States.",
+    },
+    "CPI": {
+        "type": "function",
+        "ticker_symbol": "CPI",
+        "notes": "Alpha Vantage - monthly and semiannual consumer price index (CPI) of the United States. CPI is widely regarded as the barometer of inflation levels in the broader economy.",
+    },
+    "INFLATION": {
+        "type": "function",
+        "ticker_symbol": "INFLATION",
+        "notes": "Alpha Vantage - annual inflation rates (consumer prices) of the United States.",
+    },
+    "ADVANCED_RETAIL_SALE": {
+        "type": "function",
+        "ticker_symbol": "RETAIL_SALE",
+        "notes": "Alpha Vantage - monthly Advance Retail Sales: Retail Trade data of the United States. Source: U.S. Census Bureau, Advance Retail Sales: Retail Trade, retrieved from FRED, Federal Reserve Bank of St. Louis",
+    },
+    "DURABLES": {
+        "ticker_symbol": "DURABLES",
+        "type": "function",
+        "notes": "Alpha Vantage - monthly manufacturers' new orders of durable goods in the United States.",
+    },
+    "UNEMPLOYMENT": {
+        "ticker_symbol": "UNEMPLOYMENT",
+        "type": "function",
+        "notes": "Alpha Vantage - monthly unemployment data of the United States. The unemployment rate represents the number of unemployed as a percentage of the labor force.",
+    },
+    "NONFARM_PAYROLL": {
+        "ticker_symbol": "NONFARM_PAYROLL",
+        "type": "function",
+        "notes": "Alpha Vantage - monthly US All Employees: Total Nonfarm (commonly known as Total Nonfarm Payroll), a measure of the number of U.S. workers in the economy that excludes proprietors, private household employees, unpaid volunteers, farm employees, and the unincorporated self-employed.",
+    },
     "SPY": {
         "ticker_symbol": "SPY",
         "notes": "Alpha Vantage - SPDR S&P 500 ETF Trust",
+        "type": "time_series_daily",
     },
     "QQQ": {
         "ticker_symbol": "QQQ",
+        "type": "time_series_daily",
         "notes": "Alpha Vantage - Invesco QQQ Trust, which tracks the NASDAQ-100, a subset of the NASDAQ Composite",
     },
     "DIA": {
         "ticker_symbol": "DIA",
+        "type": "time_series_daily",
         "notes": "Alpha Vantage - SPDR Dow Jones Industrial Average ETF",
     },
     "FTSE100": {
         "ticker_symbol": "ISF.L",
+        "type": "time_series_daily",
         "notes": "Alpha Vantage - iShares Core FTSE 100 UCITS ETF (traded on the London Stock Exchange)",
     },
     "Nikkei225": {
         "ticker_symbol": "EWJ",
+        "type": "time_series_daily",
         "notes": "Alpha Vantage - iShares MSCI Japan ETF (tracks a broad range of Japanese stocks)",
     },
     "DAX": {
         "ticker_symbol": "DAX",
+        "type": "partime_series_dailyams",
         "notes": "Alpha Vantage -  Global X DAX Germany ETF",
     },
     "CAC40": {
         "ticker_symbol": "CAC",
+        "type": "time_series_daily",
         "notes": "Alpha Vantage - Lyxor CAC 40 ETF (traded on Euronext Paris)",
     },
 }
@@ -238,7 +339,7 @@ def create_data_table(key: str) -> None:
 
 
     
-def append_to_table(key: str) -> None:
+def append_to_table(key: str, method: str = ) -> None:
     info: dict = alpha_vantage_tickers[key]
     table_name = key.lower()
     ticker = info["ticker_symbol"]
@@ -285,6 +386,10 @@ for key in alpha_vantage_tickers.keys():
     table_name = key.lower()
     exists = table_exists(spark=spark, table_name=table_name, database=DATABASE_NAME)
     print(f"key: {key}, exists: {exists}")
+    
+    if info['type'] != 'time_series_daily':
+        pass
+
     if not exists:
         create_data_table(key)
     else:
