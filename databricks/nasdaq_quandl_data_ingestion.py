@@ -165,6 +165,26 @@ data_sources_dict = {
 
 # COMMAND ----------
 
+# MAGIC %md 
+# MAGIC ## Utility Functions
+
+# COMMAND ----------
+
+def clean_column_names(df):
+    """
+    Removes spaces from all column names in the DataFrame and replaces bad characters with underscores.
+    """
+    # Define bad characters which you want to replace with an underscore
+    bad_chars = [' ', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', '\\', ':', ';', '"', "'", '<', '>', ',', '.', '?', '/']
+
+    # Replace spaces and bad characters in column names
+    df.columns = df.columns.str.translate(str.maketrans({char: '_' for char in bad_chars}))
+    
+    return df
+
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## Spark setup
 
@@ -189,7 +209,10 @@ def create_data_table(key: str) -> None:
     info: dict = data_sources_dict[key]
     df = nasdaqdatalink.get(info['data_link_code'], start_date=START_DATE, end_date=today)
     df = df.reset_index()
+    
+    df = clean_column_names(df)
     print(f"columns: {df.columns}")
+    
     spark_df = spark.createDataFrame(df)
     spark_df.write.saveAsTable(info["catalog_table_name"])
     table_comment = info['notes'] + " - URL: " + info['source_url']
@@ -221,6 +244,7 @@ def append_to_table(key: str) -> None:
     print("\n")
 
     if not df.empty:
+        df = clean_column_names(df)
         spark_df = spark.createDataFrame(df)
         spark_df.write.mode("append").saveAsTable(info["catalog_table_name"])
 
