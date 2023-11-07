@@ -12,6 +12,13 @@ A data engineering pipeline to demonstrate my skills using
 An automated tool to load data from a variety of sources, transform it and build a model to predict
 the price of bitcoin. 
 
+## Data service providers
+
+- [Alpha Vantage](https://www.alphavantage.co/documentation/)
+- [NASDAQ data link](https://data.nasdaq.com/institutional-investors)
+- [CoinAPI.io](https://docs.coinapi.io/)
+
+
 ## Data Sources
 
 1. BTC - daily OHLCV
@@ -29,7 +36,10 @@ the price of bitcoin.
 13. ML_USEY - daily - BONDS - US Corporate - US Corporate Bond Index Yield
 14. NIKKEI225 - daily OHLCV - Alpha Vantage - iShares MSCI Japan ETF (tracks a broad range of
     Japanese stocks)
-15. 
+15. QQQ - NASDAQ100 OHLCV - Alpha Vantage - Invesco QQQ Trust, which tracks the NASDAQ-100, a subset of the NASDAQ
+    Composite
+16. SP500 - daily - S&P 500 Dividend Yield 
+17. SPY - daily OHLCV - Alpha Vantage - SPDR S&P 500 ETF Trust
 
 
 
