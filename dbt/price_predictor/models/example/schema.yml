@@ -2,6 +2,14 @@
 version: 2
 
 models:
+  - name: simple-1
+    description: "just a smoke test"
+    columns:
+      - name: date
+        tests:
+          - unique
+          - not_null
+
   - name: my_first_dbt_model
     description: "A starter dbt model"
     columns:
