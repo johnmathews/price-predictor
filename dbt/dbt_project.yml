@@ -5,6 +5,8 @@
 name: 'price_predictor'
 version: '1.0.0'
 config-version: 2
+dbt-cloud: 
+    project-id: 310003
 
 # This setting configures which "profile" dbt uses for this project.
 profile: 'price_predictor'
