@@ -5,7 +5,7 @@ models:
   - name: simple
     description: "just a smoke test"
     columns:
-      - name: date
+      - name: date_open
         tests:
           - unique
           - not_null
