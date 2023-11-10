@@ -112,6 +112,21 @@ def get_historical_ohlcv(ticker_symbol: str, output_size: str):
     # Return the data as a dictionary
     return ohlcv_data
 
+def alpha_vantage_api_call(key: str):
+    info: dict = alpha_vantage_tickers[key]
+
+    asset = info["ticker_symbol"]
+    interval = info["interval"]
+
+    url = f"https://www.alphavantage.co/query?function={asset}&interval={interval}&apikey={ALPHA_VANTAGE_API_KEY}"
+    response = requests.get(url)
+    print(f"{response = }")
+    print(f"{response.text}")
+    print(f"{response.data}")
+    data = response.json()
+    print(f"data = ")
+    return data
+
 
 # COMMAND ----------
 
@@ -237,7 +252,7 @@ alpha_vantage_tickers = {
     },
     "DAX": {
         "ticker_symbol": "DAX",
-        "type": "partime_series_dailyams",
+        "type": "partime_series_daily",
         "notes": "Alpha Vantage -  Global X DAX Germany ETF",
     },
     "CAC40": {
@@ -321,13 +336,26 @@ def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
 
 def create_data_table(key: str) -> None:
     info: dict = alpha_vantage_tickers[key]
+    method = info["type"] # "time_serios_dialy" or "function"
     table_name = key.lower()
     ticker = info["ticker_symbol"]
     
-    av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='full')
-    df = pd.DataFrame.from_dict(av_data, orient="index")
-    df = df.reset_index().rename(columns={'index': 'date'})
-    df['date'] = pd.to_datetime(df['date'])
+    if method == "time_series_daily":
+        av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='full')
+        df = pd.DataFrame.from_dict(av_data, orient="index")
+        df = df.reset_index().rename(columns={'index': 'date'})
+        df['date'] = pd.to_datetime(df['date'])
+    
+    elif method == "function":
+
+        av_data = alpha_vantage_api_call(key)
+        df = pd.DataFrame(av_data['data'])
+        df['date'] = pd.to_datetime(df['date'])
+        df['value'] = pd.to_numeric(df['value'], errors='coerce')
+    
+    else:
+        raise Error("unknown method")
+    
     df = clean_column_names(df)
 
     spark_df = spark.createDataFrame(df)
@@ -335,15 +363,13 @@ def create_data_table(key: str) -> None:
     
     table_comment = info['notes']
     spark.sql(f"COMMENT ON TABLE {key.lower()} IS '{table_comment}'")
-
-
-
     
-def append_to_table(key: str, method: str ) -> None:
+def append_to_table(key: str) -> None:
     info: dict = alpha_vantage_tickers[key]
     table_name = key.lower()
     ticker = info["ticker_symbol"]
-
+    method = info["type"] # "time_serios_dialy" or "function"
+    print(f"{method = }")
     df = spark.table(table_name)
     min_max_date = df.agg(min('date').alias('min_date'), max('date').alias('max_date')).collect()[0]
     max_date = min_max_date['max_date']
@@ -364,9 +390,21 @@ def append_to_table(key: str, method: str ) -> None:
     print(f"number of expected rows in table: {date_difference}")
     print(f"row count error: {date_difference - df.distinct().count()}")
 
-    av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='compact')
-    df = pd.DataFrame.from_dict(av_data, orient="index")
-    df = df.reset_index().rename(columns={'index': 'date'})
+    if method == "time_series_daily":
+        av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='compact')
+        df = pd.DataFrame.from_dict(av_data, orient="index")
+        df = df.reset_index().rename(columns={'index': 'date'})
+        df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
+    elif method == "function":
+        av_data = alpha_vantage_api_call(key)
+        print(f"av_data = ")
+        df = pd.DataFrame(av_data['data'])
+        df['date'] = pd.to_datetime(df['date'])
+        df['value'] = pd.to_numeric(df['value'], errors='coerce')
+
+    else:
+        raise Error("unknown method")
+
     df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
     
     if not df.empty:
@@ -386,9 +424,6 @@ for key in alpha_vantage_tickers.keys():
     table_name = key.lower()
     exists = table_exists(spark=spark, table_name=table_name, database=DATABASE_NAME)
     print(f"key: {key}, exists: {exists}")
-    
-    if info['type'] != 'time_series_daily':
-        pass
 
     if not exists:
         create_data_table(key)
