@@ -339,7 +339,7 @@ def create_data_table(key: str) -> None:
 
 
     
-def append_to_table(key: str, method: str = ) -> None:
+def append_to_table(key: str, method: str ) -> None:
     info: dict = alpha_vantage_tickers[key]
     table_name = key.lower()
     ticker = info["ticker_symbol"]
