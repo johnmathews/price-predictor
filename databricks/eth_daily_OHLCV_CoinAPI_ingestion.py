@@ -43,6 +43,14 @@ class UnnecessaryAPICallError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class HTTPError(Exception):
+    """Custom exception for HTTP errors."""
+    def __init__(self, status_code, message="HTTP error occurred"):
+    self.status_code = status_code
+    self.message = message
+    super().__init__(f"{message}: Status Code {status_code}")
+
+
 
 config = read_ini_config_from_workspace(CONFIG_PATH)
 START_DATE = get_config_value(config, "General", "start_date")
