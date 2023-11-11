@@ -125,11 +125,13 @@ def alpha_vantage_api_call(key: str):
     #print(f"{response = }")
     print(f"{response.text}")
     
-    # if response.text == "Youve used all your requests for today":
-    #    "exit notebook run"
-
     data = response.json()
-    print(f"data = ")
+
+    if "information" in [key.lower() for key in data]:
+        print(f"{data.keys() = }")
+        dbutils.notebook.exit(f"{data['Information'] = }")
+        # EXIT the notebook!
+
     return data
 
 
@@ -355,9 +357,10 @@ def create_data_table(key: str) -> None:
         df['date'] = pd.to_datetime(df['date'])
     
     elif method == "function":
-
         av_data = alpha_vantage_api_call(key)
-        df = pd.DataFrame(av_data['data'])
+        print(f"{key = }")
+        print(f"av_data.keys() = ")
+        df = pd.DataFrame(av_data)
         df['date'] = pd.to_datetime(df['date'])
         df['value'] = pd.to_numeric(df['value'], errors='coerce')
     
@@ -406,6 +409,8 @@ def append_to_table(key: str) -> None:
     elif method == "function":
         av_data = alpha_vantage_api_call(key)
         #print(f"av_data = ")
+        print(f"{key = }")
+        print(f"av_data.keys() = ")
         df = pd.DataFrame(av_data['data'])
         df['date'] = pd.to_datetime(df['date'])
         df['value'] = pd.to_numeric(df['value'], errors='coerce')
