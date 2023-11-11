@@ -14,6 +14,7 @@
 # COMMAND ----------
 
 import configparser
+import datetime
 
 CONFIG_PATH = '../config/config.ini'
 
@@ -125,7 +126,6 @@ def alpha_vantage_api_call(key: str):
     else:
         url = f"https://www.alphavantage.co/query?function={asset}&apikey={ALPHA_VANTAGE_API_KEY}"
     response = requests.get(url)
-    #print(f"{response = }")
     print(f"{response.text}")
     
     data = response.json()
@@ -133,7 +133,6 @@ def alpha_vantage_api_call(key: str):
     if "information" in [key.lower() for key in data]:
         print(f"{data.keys() = }")
         dbutils.notebook.exit(f"{data['Information']}")
-        # EXIT the notebook!
 
     return data
 
@@ -236,10 +235,10 @@ alpha_vantage_tickers = {
         "ticker_symbol": "INFLATION",
         "notes": "Alpha Vantage - annual inflation rates (consumer prices) of the United States.",
     },
-    "ADVANCED_RETAIL_SALE": {
+    "ADVANCED_RETAIL_SALES": {
         "type": "function",
         "group": "B",
-        "ticker_symbol": "RETAIL_SALE",
+        "ticker_symbol": "RETAIL_SALES",
         "notes": "Alpha Vantage - monthly Advance Retail Sales: Retail Trade data of the United States. Source: U.S. Census Bureau, Advance Retail Sales: Retail Trade, retrieved from FRED, Federal Reserve Bank of St. Louis",
     },
     "DURABLES": {
@@ -396,7 +395,7 @@ def create_data_table(key: str) -> None:
         df['value'] = pd.to_numeric(df['value'], errors='coerce')
     
     else:
-        raise Error("unknown method")
+        raise Error("unknown 'method' type in alpha_vantage_tickers dict")
     
     df = clean_column_names(df)
 
@@ -410,27 +409,21 @@ def append_to_table(key: str) -> None:
     info: dict = alpha_vantage_tickers[key]
     table_name = key.lower()
     ticker = info["ticker_symbol"]
-    method = info["type"] # "time_serios_dialy" or "function"
-    print(f"{method = }")
+    method = info["type"]
+
     df = spark.table(table_name)
     min_max_date = df.agg(min('date').alias('min_date'), max('date').alias('max_date')).collect()[0]
     max_date = min_max_date['max_date']
     min_date = min_max_date['min_date']
-    
-    #max_date = datetime.strptime(min_max_date['max_date'], "%Y-%m-%d")
-    #min_date = datetime.strptime(min_max_date['min_date'], "%Y-%m-%d")
     
     date_difference = (max_date - min_date).days + 2
     start_date = max_date + timedelta(days=1)
 
     print(f"earliest date in table is: {min_date}")
     print(f"most recent date in table is: {max_date}")
-    print(f"number of calendar days between earliest and most recent date in table (inclusive): {date_difference}")
-
+   
     print(f"number of rows in table: {df.count()}")
     print(f"number of unique rows in table: {df.distinct().count()}")
-    print(f"number of expected rows in table: {date_difference}")
-    print(f"row count error: {date_difference - df.distinct().count()}")
 
     if method == "time_series_daily":
         av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='compact')
@@ -445,7 +438,6 @@ def append_to_table(key: str) -> None:
         df = pd.DataFrame(av_data['data'])
         df['date'] = pd.to_datetime(df['date'])
         df['value'] = pd.to_numeric(df['value'], errors='coerce')
-
     else:
         raise Error("unknown method")
 
@@ -466,7 +458,7 @@ for key in alpha_vantage_tickers.keys():
 
     if day_of_week_number not in ticker_by_day[info["group"]]:
         print(f"skipping {key} because its only collected every other day.")
-        pass
+        continue
 
     ticker = info["ticker_symbol"]
     notes = info["notes"]
