@@ -116,11 +116,13 @@ def alpha_vantage_api_call(key: str):
     info: dict = alpha_vantage_tickers[key]
 
     asset = info["ticker_symbol"]
-    interval = info["interval"]
-
-    url = f"https://www.alphavantage.co/query?function={asset}&interval={interval}&apikey={ALPHA_VANTAGE_API_KEY}"
+    if "interval" in [key.lower() for key in info]:
+        interval = info["interval"]
+        url = f"https://www.alphavantage.co/query?function={asset}&interval={interval}&apikey={ALPHA_VANTAGE_API_KEY}"
+    else:
+        url = f"https://www.alphavantage.co/query?function={asset}&apikey={ALPHA_VANTAGE_API_KEY}"
     response = requests.get(url)
-    print(f"{response = }")
+    #print(f"{response = }")
     print(f"{response.text}")
     
     # if response.text == "Youve used all your requests for today":
@@ -190,18 +192,21 @@ alpha_vantage_tickers = {
     },
     "TREASURY_YIELD": {
         "type": "function",
+        "interval": "daily",
         "ticker_symbol": "TREASURY_YIELD",
-        "notes": "Alpha Vantage - daily, weekly, and monthly US treasury yield of a given maturity timeline (e.g., 5 year, 30 year, etc). By default, maturity=10year. Strings 3month, 2year, 5year, 7year, 10year, and 30year are accepted.",
+        "notes": "Alpha Vantage - daily, weekly, and monthly US treasury yield of a given maturity timeline (e.g., 5 year, 30 year, etc). By default, maturity=10year. Strings 3month, 2year, 5year, 7year, 10year, and 30year are accepted. interval=monthly. Strings daily, weekly, and monthly are accepted.",
     },
     "USA_INTEREST_RATE": {
         "type": "function",
+        'interval': "daily",
         "ticker_symbol": "FEDERAL_FUNDS_RATE",
-        "notes": "Alpha Vantage - daily, weekly, and monthly federal funds rate (interest rate) of the United States.",
+        "notes": "Alpha Vantage - daily, weekly, and monthly federal funds rate (interest rate) of the United States. By default, interval=monthly. Strings daily, weekly, and monthly are accepted. ",
     },
     "CPI": {
         "type": "function",
+        "interval": "daily",
         "ticker_symbol": "CPI",
-        "notes": "Alpha Vantage - monthly and semiannual consumer price index (CPI) of the United States. CPI is widely regarded as the barometer of inflation levels in the broader economy.",
+        "notes": "Alpha Vantage - monthly and semiannual consumer price index (CPI) of the United States. CPI is widely regarded as the barometer of inflation levels in the broader economy. By default, interval=monthly. Strings monthly and semiannual are accepted.",
     },
     "INFLATION": {
         "type": "function",
@@ -400,7 +405,7 @@ def append_to_table(key: str) -> None:
         df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
     elif method == "function":
         av_data = alpha_vantage_api_call(key)
-        print(f"av_data = ")
+        #print(f"av_data = ")
         df = pd.DataFrame(av_data['data'])
         df['date'] = pd.to_datetime(df['date'])
         df['value'] = pd.to_numeric(df['value'], errors='coerce')
