@@ -39,6 +39,9 @@ def get_config_value(config, section, key):
 config = read_ini_config_from_workspace(CONFIG_PATH)
 START_DATE = get_config_value(config, "General", "start_date")
 DATABASE_NAME = get_config_value(config, "General", "database_name")
+# Get the day of the week as a number (0: Monday, 6: Sunday)
+current_date = datetime.date.today()
+day_of_week_number = current_date.weekday()
 
 # COMMAND ----------
 
@@ -129,7 +132,7 @@ def alpha_vantage_api_call(key: str):
 
     if "information" in [key.lower() for key in data]:
         print(f"{data.keys() = }")
-        dbutils.notebook.exit(f"{data['Information'] = }")
+        dbutils.notebook.exit(f"{data['Information']}")
         # EXIT the notebook!
 
     return data
@@ -140,66 +143,77 @@ def alpha_vantage_api_call(key: str):
 alpha_vantage_tickers = {
     "CORN": {
         "type": "function",
+        "group": "A",
         "ticker_symbol": "CORN",
         "interval": "monthly",
         "notes": "Alpha Vantage -  the global price of corn in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
     },
     "COFFEE": {
         "type": "function",
+        "group": "B",
         "ticker_symbol": "COFFEE",
         "interval": "monthly",
         "notes": "Alpha Vantage - global price of coffee in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
     },
     "SUGAR": {
         "type": "function",
+        "group": "A",
         "ticker_symbol": "SUGAR",
         "interval": "monthly",
         "notes": "Alpha Vantage - s the global price of sugar in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted." ,
     },
     "ALUMINUM": {
         "type": "function",
+        "group": "B",
         "ticker_symbol": "ALUMINUM",
         "interval": "monthly",
         "notes": "Alpha Vantage -  global price of aluminum in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
     },
     "COPPER": {
         "type": "function",
+        "group": "A",
         "ticker_symbol": "COPPER",
         "interval": "monthly",
         "notes": "Alpha Vantage - global price of copper in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
     },
     "NATURAL_GAS": {
         "type": "function",
+        "group": "B",
         "ticker_symbol": "NATURAL_GAS",
         "interval": "daily",
         "notes": "Alpha Vantage -  the Henry Hub natural gas spot prices in daily, weekly, and monthly horizons. By default, interval=monthly. Strings daily, weekly, and monthly are accepted.",
     },
     "WHEAT": {
         "type": "function",
+        "group": "A",
         "ticker_symbol": "WHEAT",
         "interval": "monthly",
         "notes": "Alpha Vantage - global price of wheat in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
     },
     "WTI": {
         "type": "function",
+        "group": "B",
         "ticker_symbol": "WTI",
         "interval": "monthly",
         "notes": "Alpha Vantage - West Texas Intermediate (WTI) crude oil prices in daily, weekly, and monthly horizons. By default, interval=monthly. Strings daily, weekly, and monthly are accepted.",
     },
     "BRENT": {
         "type": "function",
+        "group": "A",
         "ticker_symbol": "BRENT",
         "interval": "daily",
         "notes": "Alpha Vantage - Brent (Europe) crude oil prices in daily, weekly, and monthly horizons. By default, interval=monthly. Strings daily, weekly, and monthly are accepted.",
     },
     "TREASURY_YIELD": {
         "type": "function",
+        "group": "B",
         "interval": "daily",
         "ticker_symbol": "TREASURY_YIELD",
         "notes": "Alpha Vantage - daily, weekly, and monthly US treasury yield of a given maturity timeline (e.g., 5 year, 30 year, etc). By default, maturity=10year. Strings 3month, 2year, 5year, 7year, 10year, and 30year are accepted. interval=monthly. Strings daily, weekly, and monthly are accepted.",
     },
     "USA_INTEREST_RATE": {
         "type": "function",
+        "group": "A",
         'interval': "daily",
         "ticker_symbol": "FEDERAL_FUNDS_RATE",
         "notes": "Alpha Vantage - daily, weekly, and monthly federal funds rate (interest rate) of the United States. By default, interval=monthly. Strings daily, weekly, and monthly are accepted. ",
@@ -207,26 +221,31 @@ alpha_vantage_tickers = {
     "CPI": {
         "type": "function",
         "interval": "daily",
+        "group": "B",
         "ticker_symbol": "CPI",
         "notes": "Alpha Vantage - monthly and semiannual consumer price index (CPI) of the United States. CPI is widely regarded as the barometer of inflation levels in the broader economy. By default, interval=monthly. Strings monthly and semiannual are accepted.",
     },
     "INFLATION": {
         "type": "function",
+        "group": "A",
         "ticker_symbol": "INFLATION",
         "notes": "Alpha Vantage - annual inflation rates (consumer prices) of the United States.",
     },
     "ADVANCED_RETAIL_SALE": {
         "type": "function",
+        "group": "B",
         "ticker_symbol": "RETAIL_SALE",
         "notes": "Alpha Vantage - monthly Advance Retail Sales: Retail Trade data of the United States. Source: U.S. Census Bureau, Advance Retail Sales: Retail Trade, retrieved from FRED, Federal Reserve Bank of St. Louis",
     },
     "DURABLES": {
         "ticker_symbol": "DURABLES",
         "type": "function",
+        "group": "A",
         "notes": "Alpha Vantage - monthly manufacturers' new orders of durable goods in the United States.",
     },
     "UNEMPLOYMENT": {
         "ticker_symbol": "UNEMPLOYMENT",
+        "group": "B",
         "type": "function",
         "notes": "Alpha Vantage - monthly unemployment data of the United States. The unemployment rate represents the number of unemployed as a percentage of the labor force.",
     },
@@ -237,36 +256,43 @@ alpha_vantage_tickers = {
     },
     "SPY": {
         "ticker_symbol": "SPY",
+        "group": "A",
         "notes": "Alpha Vantage - SPDR S&P 500 ETF Trust",
         "type": "time_series_daily",
     },
     "QQQ": {
         "ticker_symbol": "QQQ",
         "type": "time_series_daily",
+        "group": "B",
         "notes": "Alpha Vantage - Invesco QQQ Trust, which tracks the NASDAQ-100, a subset of the NASDAQ Composite",
     },
     "DIA": {
         "ticker_symbol": "DIA",
         "type": "time_series_daily",
+        "group": "A",
         "notes": "Alpha Vantage - SPDR Dow Jones Industrial Average ETF",
     },
     "FTSE100": {
         "ticker_symbol": "ISF.L",
         "type": "time_series_daily",
+        "group": "B",
         "notes": "Alpha Vantage - iShares Core FTSE 100 UCITS ETF (traded on the London Stock Exchange)",
     },
     "Nikkei225": {
         "ticker_symbol": "EWJ",
         "type": "time_series_daily",
+        "group": "A",
         "notes": "Alpha Vantage - iShares MSCI Japan ETF (tracks a broad range of Japanese stocks)",
     },
     "DAX": {
         "ticker_symbol": "DAX",
+        "group": "B",
         "type": "partime_series_daily",
         "notes": "Alpha Vantage -  Global X DAX Germany ETF",
     },
     "CAC40": {
         "ticker_symbol": "CAC",
+        "group": "A",
         "type": "time_series_daily",
         "notes": "Alpha Vantage - Lyxor CAC 40 ETF (traded on Euronext Paris)",
     },
