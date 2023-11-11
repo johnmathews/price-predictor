@@ -132,7 +132,7 @@ def alpha_vantage_api_call(key: str):
 
     if "information" in [key.lower() for key in data]:
         print(f"{data.keys() = }")
-        dbutils.notebook.exit(f"{data['Information']}")
+        dbutils.notebook.exit(f"message - {data['Information']}")
 
     return data
 
