@@ -140,6 +140,11 @@ def alpha_vantage_api_call(key: str):
 
 # COMMAND ----------
 
+ticker_by_day = {
+    "A": [0,2,4,6],
+    "B": [1,3,5],
+}
+
 alpha_vantage_tickers = {
     "CORN": {
         "type": "function",
@@ -456,8 +461,13 @@ def append_to_table(key: str) -> None:
 
 # COMMAND ----------
 
-for key in alpha_vantage_tickers.keys():
+for key in alpha_vantage_tickers.keys(): 
     info = alpha_vantage_tickers[key]
+
+    if day_of_week_number not in ticker_by_day[info["group"]]:
+        print(f"skipping {key} because its only collected every other day.")
+        pass
+
     ticker = info["ticker_symbol"]
     notes = info["notes"]
     table_name = key.lower()
