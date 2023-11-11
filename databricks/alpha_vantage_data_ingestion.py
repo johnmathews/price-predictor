@@ -122,7 +122,10 @@ def alpha_vantage_api_call(key: str):
     response = requests.get(url)
     print(f"{response = }")
     print(f"{response.text}")
-    print(f"{response.data}")
+    
+    # if response.text == "Youve used all your requests for today":
+    #    "exit notebook run"
+
     data = response.json()
     print(f"data = ")
     return data
