@@ -16,7 +16,8 @@
 import configparser
 import datetime
 
-CONFIG_PATH = '../config/config.ini'
+CONFIG_PATH = "../config/config.ini"
+
 
 def read_ini_config_from_workspace(path):
     """
@@ -25,17 +26,22 @@ def read_ini_config_from_workspace(path):
     config_object = configparser.ConfigParser()
     with open(path, "r") as file:
         config_object.read_file(file)
-    
+
     # Create a nested dictionary for each section and its key-value pairs
-    config_dict = {section: dict(config_object.items(section)) for section in config_object.sections()}
-    
+    config_dict = {
+        section: dict(config_object.items(section))
+        for section in config_object.sections()
+    }
+
     return config_dict
+
 
 def get_config_value(config, section, key):
     """
     Retrieve a specific configuration value given the section and key.
     """
     return config.get(section, {}).get(key)
+
 
 config = read_ini_config_from_workspace(CONFIG_PATH)
 START_DATE = get_config_value(config, "General", "start_date")
@@ -54,7 +60,15 @@ day_of_week_number = current_date.weekday()
 ## imports and local config
 from pyspark.sql import SparkSession
 
-from pyspark.sql.functions import col, count, datediff, row_number, min, max, date_format
+from pyspark.sql.functions import (
+    col,
+    count,
+    datediff,
+    row_number,
+    min,
+    max,
+    date_format,
+)
 
 import os
 import json
@@ -62,34 +76,37 @@ import requests
 from datetime import datetime, timedelta
 import pandas as pd
 
-ALPHA_VANTAGE_API_KEY: str = dbutils.secrets.get(scope="general", key="alphavantage-api-key") # demo
-ENDPOINT = 'https://www.alphavantage.co/query'
+ALPHA_VANTAGE_API_KEY: str = dbutils.secrets.get(
+    scope="general", key="alphavantage-api-key"
+)  # demo
+ENDPOINT = "https://www.alphavantage.co/query"
 DATE_COLUMN: str = "DATE"
-DAYS_WITH_MISSING_DATA: int = 0 
+DAYS_WITH_MISSING_DATA: int = 0
 today: datetime = datetime.now().strftime("%Y-%m-%d")
 
 # COMMAND ----------
 
-# MAGIC %md 
+# MAGIC %md
 # MAGIC ## Alpha Vantage API retrieval
 
 # COMMAND ----------
+
 
 def get_historical_ohlcv(ticker_symbol: str, output_size: str):
     """
     Retrieve historical open, high, low, close, and volume (OHLCV) data for a given ticker symbol.
 
-    This function queries the Alpha Vantage API for daily OHLCV data. It allows the user to specify 
-    whether to receive a compact dataset of the most recent 100 data points or a full dataset 
+    This function queries the Alpha Vantage API for daily OHLCV data. It allows the user to specify
+    whether to receive a compact dataset of the most recent 100 data points or a full dataset
     that includes up to 20 years of historical data. Adjusted close values are not included by default.
-    
+
     Parameters:
     - ticker_symbol (str): The ticker symbol of the stock to retrieve data for.
     - output_size (str): The size of the dataset to return ('compact' for 100 data points, 'full' for up to 20 years).
-    
+
     Returns:
     - dict: A dictionary where each key is a date (YYYY-MM-DD) and each value is a dictionary of OHLCV data.
-    
+
     Raises:
     - ValueError: If the API query returns an error, a ValueError is raised with the error message.
 
@@ -97,24 +114,27 @@ def get_historical_ohlcv(ticker_symbol: str, output_size: str):
     """
 
     params = {
-        'function': 'TIME_SERIES_DAILY',  # Use 'TIME_SERIES_DAILY_ADJUSTED' for adjusted close values
-        'symbol': ticker_symbol,
-        'outputsize': output_size,  # Use 'compact' for the latest 100 data points; 'full' returns up to 20 years of historical data
-        'apikey': ALPHA_VANTAGE_API_KEY
+        "function": "TIME_SERIES_DAILY",  # Use 'TIME_SERIES_DAILY_ADJUSTED' for adjusted close values
+        "symbol": ticker_symbol,
+        "outputsize": output_size,  # Use 'compact' for the latest 100 data points; 'full' returns up to 20 years of historical data
+        "apikey": ALPHA_VANTAGE_API_KEY,
     }
-    
+
     response = requests.get(ENDPOINT, params=params)
     data = response.json()
-    
+
     # Check if the response contains an error message
     if "Error Message" in data:
-        raise ValueError(f"Error retrieving data for {ticker_symbol}: {data['Error Message']}")
-    
+        raise ValueError(
+            f"Error retrieving data for {ticker_symbol}: {data['Error Message']}"
+        )
+
     # The historical data is under the 'Time Series (Daily)' key
-    ohlcv_data = data.get('Time Series (Daily)', {})
-    
+    ohlcv_data = data.get("Time Series (Daily)", {})
+
     # Return the data as a dictionary
     return ohlcv_data
+
 
 def alpha_vantage_api_call(key: str):
     info: dict = alpha_vantage_tickers[key]
@@ -128,7 +148,7 @@ def alpha_vantage_api_call(key: str):
 
     response = requests.get(url)
     print(f"{response.status_code = }")
-    
+
     data = response.json()
 
     if "information" in [key.lower() for key in data]:
@@ -143,6 +163,7 @@ def alpha_vantage_api_call(key: str):
     temp_df = pd.DataFrame(data)
     return data
 
+
 # COMMAND ----------
 
 # MAGIC %md
@@ -151,8 +172,8 @@ def alpha_vantage_api_call(key: str):
 # COMMAND ----------
 
 ticker_by_day = {
-    "A": [0,2,4,6],
-    "B": [1,3,5],
+    "A": [0, 2, 4, 6],
+    "B": [1, 3, 5],
 }
 
 alpha_vantage_tickers = {
@@ -175,7 +196,7 @@ alpha_vantage_tickers = {
         "group": "A",
         "ticker_symbol": "SUGAR",
         "interval": "monthly",
-        "notes": "Alpha Vantage - s the global price of sugar in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted." ,
+        "notes": "Alpha Vantage - s the global price of sugar in monthly, quarterly, and annual horizons. By default, interval=monthly. Strings monthly, quarterly, and annual are accepted.",
     },
     "ALUMINUM": {
         "type": "function",
@@ -229,7 +250,7 @@ alpha_vantage_tickers = {
     "USA_INTEREST_RATE": {
         "type": "function",
         "group": "A",
-        'interval': "daily",
+        "interval": "daily",
         "ticker_symbol": "FEDERAL_FUNDS_RATE",
         "notes": "Alpha Vantage - daily, weekly, and monthly federal funds rate (interest rate) of the United States. By default, interval=monthly. Strings daily, weekly, and monthly are accepted. ",
     },
@@ -331,16 +352,49 @@ spark = SparkSession.builder.getOrCreate()
 
 # COMMAND ----------
 
+
 def clean_column_names(df):
     """
     Removes spaces from all column names in the DataFrame and replaces bad characters with underscores.
     """
     # Define bad characters which you want to replace with an underscore
-    bad_chars = [' ', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', '\\', ':', ';', '"', "'", '<', '>', ',', '.', '?', '/']
+    bad_chars = [
+        " ",
+        "!",
+        "@",
+        "#",
+        "$",
+        "%",
+        "^",
+        "&",
+        "*",
+        "(",
+        ")",
+        "+",
+        "=",
+        "{",
+        "}",
+        "[",
+        "]",
+        "|",
+        "\\",
+        ":",
+        ";",
+        '"',
+        "'",
+        "<",
+        ">",
+        ",",
+        ".",
+        "?",
+        "/",
+    ]
 
     # Replace spaces and bad characters in column names
-    df.columns = df.columns.str.translate(str.maketrans({char: '_' for char in bad_chars}))
-    
+    df.columns = df.columns.str.translate(
+        str.maketrans({char: "_" for char in bad_chars})
+    )
+
     return df
 
 
@@ -354,7 +408,7 @@ def clean_dataframe(df, date_column, cutoff_date):
     if date_column not in df.columns:
         print(f"column '{date_column}' does not exist. skipping clean_data function")
         return df
-    
+
     # Convert the date column to datetime if not already in datetime format
     df[date_column] = pd.to_datetime(df[date_column])
 
@@ -363,8 +417,8 @@ def clean_dataframe(df, date_column, cutoff_date):
 
     # Remove rows with dates before the given cutoff date
     filtered_df = df[df[date_column] > pd.to_datetime(cutoff_date)]
-    
-    if not filtered_df.empty: 
+
+    if not filtered_df.empty:
         min_date = filtered_df[date_column].min()
         max_date = filtered_df[date_column].max()
         print(f"The oldest date is: {min_date}")
@@ -374,12 +428,14 @@ def clean_dataframe(df, date_column, cutoff_date):
 
     return filtered_df
 
+
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Get and process data
 
 # COMMAND ----------
+
 
 def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
     """
@@ -389,40 +445,42 @@ def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
     tables = spark.sql(f"SHOW TABLES IN {database}")
     return tables.filter(tables.tableName == table_name).count() > 0
 
+
 def create_data_table(key: str) -> None:
     info: dict = alpha_vantage_tickers[key]
-    method = info["type"] # "time_serios_dialy" or "function"
+    method = info["type"]  # "time_serios_dialy" or "function"
     table_name = key.lower()
     ticker = info["ticker_symbol"]
-    
+
     if method == "time_series_daily":
-        av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='full')
+        av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size="full")
         df = pd.DataFrame.from_dict(av_data, orient="index")
-        df = df.reset_index().rename(columns={'index': 'date'})
-        df['date'] = pd.to_datetime(df['date'])
-    
+        df = df.reset_index().rename(columns={"index": "date"})
+        df["date"] = pd.to_datetime(df["date"])
+
     elif method == "function":
         av_data = alpha_vantage_api_call(key)
         print(f"{key = }")
         df = pd.DataFrame(av_data)
-        
+
         if "date" in df.columns:
-            df['date'] = pd.to_datetime(df['date'])
-        
+            df["date"] = pd.to_datetime(df["date"])
+
         if "value" in df.columns:
-            df['value'] = pd.to_numeric(df['value'], errors='coerce')
-    
+            df["value"] = pd.to_numeric(df["value"], errors="coerce")
+
     else:
         raise NotImplementedError("unknown 'method' type in alpha_vantage_tickers dict")
-    
+
     df = clean_column_names(df)
 
     spark_df = spark.createDataFrame(df)
     spark_df.write.saveAsTable(table_name)
-    
-    table_comment = info['notes']
+
+    table_comment = info["notes"]
     spark.sql(f"COMMENT ON TABLE {key.lower()} IS '{table_comment}'")
-    
+
+
 def append_to_table(key: str) -> None:
     info: dict = alpha_vantage_tickers[key]
     table_name = key.lower()
@@ -434,9 +492,11 @@ def append_to_table(key: str) -> None:
         pass
         # make the index the date column
 
-    min_max_date = df.agg(min('date').alias('min_date'), max('date').alias('max_date')).collect()[0]
-    max_date = min_max_date['max_date']
-    min_date = min_max_date['min_date']
+    min_max_date = df.agg(
+        min("date").alias("min_date"), max("date").alias("max_date")
+    ).collect()[0]
+    max_date = min_max_date["max_date"]
+    min_date = min_max_date["min_date"]
 
     date_difference = (max_date - min_date).days + 2
     start_date = max_date + timedelta(days=1)
@@ -448,9 +508,9 @@ def append_to_table(key: str) -> None:
     print(f"number of unique rows in table: {df.distinct().count()}")
 
     if method == "time_series_daily":
-        av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='compact')
+        av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size="compact")
         df = pd.DataFrame.from_dict(av_data, orient="index")
-        df = df.reset_index().rename(columns={'index': 'date'})
+        df = df.reset_index().rename(columns={"index": "date"})
         print(f"{df.columns = }")
         print(f"{df.head()}")
         if "date" in df.columns:
@@ -458,29 +518,30 @@ def append_to_table(key: str) -> None:
     elif method == "function":
         av_data = alpha_vantage_api_call(key)
         print(f"{key = }")
-        
+
         df = pd.DataFrame(av_data)
         if "date" in df.columns:
-            df['date'] = pd.to_datetime(df['date'])
+            df["date"] = pd.to_datetime(df["date"])
         if "value" in df.columns:
-            df['value'] = pd.to_numeric(df['value'], errors='coerce')
+            df["value"] = pd.to_numeric(df["value"], errors="coerce")
     else:
         raise NotImplementedError("unknown 'method' type in alpha_vantage_tickers dict")
-    
+
     if "date" in df.columns:
         df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
-    
+
     if not df.empty:
         df = clean_column_names(df)
 
         spark_df = spark.createDataFrame(df)
         spark_df.write.mode("append").saveAsTable(table_name)
-    
+
     print("\n")
+
 
 # COMMAND ----------
 
-for key in alpha_vantage_tickers.keys(): 
+for key in alpha_vantage_tickers.keys():
     info = alpha_vantage_tickers[key]
 
     if day_of_week_number not in ticker_by_day[info["group"]]:
@@ -497,13 +558,6 @@ for key in alpha_vantage_tickers.keys():
         create_data_table(key)
     else:
         append_to_table(key)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC TODO:
-# MAGIC 1. check for duplicates
-# MAGIC 2. maybe interpolate days inbetween for monthly/quarterly data
 
 # COMMAND ----------
 
