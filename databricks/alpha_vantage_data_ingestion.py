@@ -62,7 +62,7 @@ import requests
 from datetime import datetime, timedelta
 import pandas as pd
 
-ALPHA_VANTAGE_API_KEY: str = dbutils.secrets.get(scope="general", key="alphavantage-api-key")
+ALPHA_VANTAGE_API_KEY: str = dbutils.secrets.get(scope="general", key="alphavantage-api-key") # demo
 ENDPOINT = 'https://www.alphavantage.co/query'
 DATE_COLUMN: str = "DATE"
 DAYS_WITH_MISSING_DATA: int = 0 
@@ -135,8 +135,20 @@ def alpha_vantage_api_call(key: str):
         print(f"{data.keys() = }")
         dbutils.notebook.exit(f"message - {data['Information']}")
 
+    print(f"{type(data) = }")
+    if "data" in data:
+        useful_data = data.pop("data")
+        metadata = data
+        data = useful_data
+
+    temp_df = pd.DataFrame(data)
+    print(f"{temp_df.head()}")
     return data
 
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
 
 # COMMAND ----------
 
@@ -246,7 +258,7 @@ alpha_vantage_tickers = {
         "ticker_symbol": "DURABLES",
         "type": "function",
         "group": "A",
-        "notes": "Alpha Vantage - monthly manufacturers' new orders of durable goods in the United States.",
+        "notes": "Alpha Vantage - monthly manufacturers new orders of durable goods in the United States.",
     },
     "UNEMPLOYMENT": {
         "ticker_symbol": "UNEMPLOYMENT",
@@ -257,6 +269,7 @@ alpha_vantage_tickers = {
     "NONFARM_PAYROLL": {
         "ticker_symbol": "NONFARM_PAYROLL",
         "type": "function",
+        "group": "A",
         "notes": "Alpha Vantage - monthly US All Employees: Total Nonfarm (commonly known as Total Nonfarm Payroll), a measure of the number of U.S. workers in the economy that excludes proprietors, private household employees, unpaid volunteers, farm employees, and the unincorporated self-employed.",
     },
     "SPY": {
@@ -291,8 +304,8 @@ alpha_vantage_tickers = {
     },
     "DAX": {
         "ticker_symbol": "DAX",
+        "type": "time_series_daily",
         "group": "B",
-        "type": "partime_series_daily",
         "notes": "Alpha Vantage -  Global X DAX Germany ETF",
     },
     "CAC40": {
@@ -339,6 +352,11 @@ def clean_dataframe(df, date_column, cutoff_date):
     It converts the date column to datetime, sorts the DataFrame, and removes
     any rows with dates before the cutoff date.
     """
+
+    if date_column not in df.columns:
+        print(f"column '{date_column}' does not exist. skipping clean_data function")
+        return df
+    
     # Convert the date column to datetime if not already in datetime format
     df[date_column] = pd.to_datetime(df[date_column])
 
@@ -365,8 +383,6 @@ def clean_dataframe(df, date_column, cutoff_date):
 
 # COMMAND ----------
 
-# If TABLE_NAME doesnt exist, go get data. If it does exist, figure out what data to request
-
 def table_exists(spark: SparkSession, table_name: str, database: str) -> bool:
     """
     Check if a table exists in the given database.
@@ -390,13 +406,16 @@ def create_data_table(key: str) -> None:
     elif method == "function":
         av_data = alpha_vantage_api_call(key)
         print(f"{key = }")
-        print(f"{av_data.keys() = }")
         df = pd.DataFrame(av_data)
-        df['date'] = pd.to_datetime(df['date'])
-        df['value'] = pd.to_numeric(df['value'], errors='coerce')
+        
+        if "date" in df.columns:
+            df['date'] = pd.to_datetime(df['date'])
+        
+        if "value" in df.columns:
+            df['value'] = pd.to_numeric(df['value'], errors='coerce')
     
     else:
-        raise Error("unknown 'method' type in alpha_vantage_tickers dict")
+        raise NotImplementedError("unknown 'method' type in alpha_vantage_tickers dict")
     
     df = clean_column_names(df)
 
@@ -413,16 +432,22 @@ def append_to_table(key: str) -> None:
     method = info["type"]
 
     df = spark.table(table_name)
+    print(f"1. {df.columns = }")
+    print(f"1. {df.head()}")
+    if "date" not in df.columns:
+        pass
+        # make the index the date column
+
     min_max_date = df.agg(min('date').alias('min_date'), max('date').alias('max_date')).collect()[0]
     max_date = min_max_date['max_date']
     min_date = min_max_date['min_date']
-    
+
     date_difference = (max_date - min_date).days + 2
     start_date = max_date + timedelta(days=1)
 
     print(f"earliest date in table is: {min_date}")
     print(f"most recent date in table is: {max_date}")
-   
+
     print(f"number of rows in table: {df.count()}")
     print(f"number of unique rows in table: {df.distinct().count()}")
 
@@ -430,19 +455,27 @@ def append_to_table(key: str) -> None:
         av_data = get_historical_ohlcv(ticker_symbol=ticker, output_size='compact')
         df = pd.DataFrame.from_dict(av_data, orient="index")
         df = df.reset_index().rename(columns={'index': 'date'})
-        df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
+        print(f"{df.columns = }")
+        print(f"{df.head()}")
+        if "date" in df.columns:
+            df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
     elif method == "function":
         av_data = alpha_vantage_api_call(key)
-        #print(f"av_data = ")
         print(f"{key = }")
-        print(f"{av_data.keys() = }")
-        df = pd.DataFrame(av_data['data'])
-        df['date'] = pd.to_datetime(df['date'])
-        df['value'] = pd.to_numeric(df['value'], errors='coerce')
+        
+        df = pd.DataFrame(av_data)
+        if "date" in df.columns:
+            df['date'] = pd.to_datetime(df['date'])
+        if "value" in df.columns:
+            df['value'] = pd.to_numeric(df['value'], errors='coerce')
     else:
-        raise Error("unknown method")
+        raise NotImplementedError("unknown 'method' type in alpha_vantage_tickers dict")
+    
 
-    df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
+    print(f"{df.columns = }")
+    print(f"{df.head()}")
+    if "date" in df.columns:
+        df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
     
     if not df.empty:
         df = clean_column_names(df)
