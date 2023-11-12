@@ -125,8 +125,9 @@ def alpha_vantage_api_call(key: str):
         url = f"https://www.alphavantage.co/query?function={asset}&interval={interval}&apikey={ALPHA_VANTAGE_API_KEY}"
     else:
         url = f"https://www.alphavantage.co/query?function={asset}&apikey={ALPHA_VANTAGE_API_KEY}"
+
     response = requests.get(url)
-    print(f"{response.text}")
+    print(f"{response.status_code = }")
     
     data = response.json()
 
@@ -389,7 +390,7 @@ def create_data_table(key: str) -> None:
     elif method == "function":
         av_data = alpha_vantage_api_call(key)
         print(f"{key = }")
-        print(f"av_data.keys() = ")
+        print(f"{av_data.keys() = }")
         df = pd.DataFrame(av_data)
         df['date'] = pd.to_datetime(df['date'])
         df['value'] = pd.to_numeric(df['value'], errors='coerce')
@@ -434,7 +435,7 @@ def append_to_table(key: str) -> None:
         av_data = alpha_vantage_api_call(key)
         #print(f"av_data = ")
         print(f"{key = }")
-        print(f"av_data.keys() = ")
+        print(f"{av_data.keys() = }")
         df = pd.DataFrame(av_data['data'])
         df['date'] = pd.to_datetime(df['date'])
         df['value'] = pd.to_numeric(df['value'], errors='coerce')
