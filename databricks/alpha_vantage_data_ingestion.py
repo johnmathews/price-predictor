@@ -135,14 +135,12 @@ def alpha_vantage_api_call(key: str):
         print(f"{data.keys() = }")
         dbutils.notebook.exit(f"message - {data['Information']}")
 
-    print(f"{type(data) = }")
     if "data" in data:
         useful_data = data.pop("data")
         metadata = data
         data = useful_data
 
     temp_df = pd.DataFrame(data)
-    print(f"{temp_df.head()}")
     return data
 
 # COMMAND ----------
@@ -432,8 +430,6 @@ def append_to_table(key: str) -> None:
     method = info["type"]
 
     df = spark.table(table_name)
-    print(f"1. {df.columns = }")
-    print(f"1. {df.head()}")
     if "date" not in df.columns:
         pass
         # make the index the date column
@@ -471,9 +467,6 @@ def append_to_table(key: str) -> None:
     else:
         raise NotImplementedError("unknown 'method' type in alpha_vantage_tickers dict")
     
-
-    print(f"{df.columns = }")
-    print(f"{df.head()}")
     if "date" in df.columns:
         df = clean_dataframe(df, date_column="date", cutoff_date=max_date)
     
@@ -481,7 +474,7 @@ def append_to_table(key: str) -> None:
         df = clean_column_names(df)
 
         spark_df = spark.createDataFrame(df)
-        spark_df.write.mode("append").saveAsTable(info["catalog_table_name"])
+        spark_df.write.mode("append").saveAsTable(table_name)
     
     print("\n")
 
