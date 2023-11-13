@@ -43,6 +43,13 @@ class UnnecessaryAPICallError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class HTTPError(Exception):
+    """Custom exception for HTTP errors."""
+    def __init__(self, status_code, message="HTTP error occurred"):
+        self.status_code = status_code
+        self.message = message
+        super().__init__(f"{message}: Status Code {status_code}")
+
 
 config = read_ini_config_from_workspace(CONFIG_PATH)
 START_DATE = get_config_value(config, "General", "start_date")
@@ -376,6 +383,7 @@ else:
 # COMMAND ----------
 
 for d in missing_dates:
+    continue
     print(f"d: {d.strftime('%Y-%m-%d')}")
     start = (d + timedelta(days=0)).strftime("%Y-%m-%d")
     end = (d + timedelta(days=0)).strftime("%Y-%m-%d")
