@@ -1,0 +1,11 @@
+
+version: 2
+
+models:
+  - name: simple
+    description: "just a smoke test"
+    columns:
+      - name: date_open
+        tests:
+          - unique
+          - not_null
