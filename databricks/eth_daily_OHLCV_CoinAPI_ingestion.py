@@ -383,6 +383,7 @@ else:
 # COMMAND ----------
 
 for d in missing_dates:
+    continue
     print(f"d: {d.strftime('%Y-%m-%d')}")
     start = (d + timedelta(days=0)).strftime("%Y-%m-%d")
     end = (d + timedelta(days=0)).strftime("%Y-%m-%d")
